@@ -12,15 +12,15 @@ class Diary:
             data = json.load(infile)
             self._entries = data[0]
         self._date = date.today().strftime("%m-%d-%Y")
-        self._day_of_the_week = date.today().strftime("%A")
+        self._weekday = date.today().strftime("%A")
 
     def get_date(self):
         """Returns the current date."""
         return self._date
 
-    def get_day_of_the_week(self):
+    def get_weekday(self):
         """Returns the current day of the week."""
-        return self._day_of_the_week
+        return self._weekday
 
     def get_last_entry(self):
         """Returns the most recent diary entry, or None if there are
@@ -30,7 +30,35 @@ class Diary:
 
         return self._entries[-1]
 
+    def update_diary(self):
+        last_update = self.get_last_entry()
+        if last_update is None:
+            return
+
+        last_date = last_update["date"]
+        if last_date != self._date:
+            self.catch_up()
+
+        date = self._date
+        weekday = self._weekday
+        file = self.upload_file()
+        summary = self.get_summary_from_user()
+        happiness = int(input("Please enter today's happiness score: "))
+        self._entries.append({"date": date,
+                              "weekday": weekday,
+                              "file": file,
+                              "summary": summary,
+                              "happiness": happiness})
+
+    def catch_up(self):
+        pass
+
+    def upload_file(self):
+        pass
+
+    def get_summary_from_user(self):
+        pass
+
 
 if __name__ == '__main__':
     test = Diary()
-    print(test.get_date(), test.get_day_of_the_week())
