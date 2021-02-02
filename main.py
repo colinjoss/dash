@@ -22,6 +22,14 @@ class Diary:
         """Returns the current day of the week."""
         return self._day_of_the_week
 
+    def get_last_entry(self):
+        """Returns the most recent diary entry, or None if there are
+        no entries."""
+        if not self._entries:
+            return None
+
+        return self._entries[-1]
+
 
 if __name__ == '__main__':
     test = Diary()
