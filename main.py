@@ -14,6 +14,15 @@ class Diary:
         self._date = date.today().strftime("%m-%d-%Y")
         self._day_of_the_week = date.today().strftime("%A")
 
+    def get_date(self):
+        """Returns the current date."""
+        return self._date
+
+    def get_day_of_the_week(self):
+        """Returns the current day of the week."""
+        return self._day_of_the_week
+
 
 if __name__ == '__main__':
-    pass
+    test = Diary()
+    print(test.get_date(), test.get_day_of_the_week())
