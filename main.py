@@ -147,7 +147,21 @@ class Diary:
                   f"During the evening, I {evening}\nOverall, I'd say today was {opinion}"
         return summary
 
-    def search_entries(self):
+    def search_by_date(self, search_date):
+        """Accepts a search date and returns a list of matches."""
+        search_match = []
+        if search_date in self._entries:
+            search_match.append(self._entries[search_date])
+        return search_match
+
+    def search_by_keyword(self, search_keyword):
+        """Accepts a search keyword and returns a list of matches."""
+        search_match = []
+        for entry in self._entries:
+            if search_keyword in entry["summary"]:
+                search_match.append(entry)
+
+    def advanced_search(self):
         pass
 
 
