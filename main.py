@@ -9,6 +9,7 @@ import shutil
 import inquirer
 import calendar
 
+
 # print(calendar.setfirstweekday(6))
 # print(calendar.month(2021, 2))
 
@@ -35,10 +36,14 @@ class Diary:
 
         return self._entries[-1]
 
+    def add_first_entry(self):
+        self.new_entry(self.get_date(), self.get_weekday())
+
     def update_diary(self):
         """Records new diary entry(s)."""
         last_entry = self.get_last_entry()
         if last_entry is None:
+            self.add_first_entry()
             return
 
         last_date = last_entry["date"]
@@ -70,9 +75,9 @@ class Diary:
         then adds the entry to the list of all entries."""
         date = day
         weekday = weekday
-        file = self.upload_file()
+        file = self.upload_file(day, weekday)
         summary = self.get_summary_from_user(date, weekday)
-        happiness = int(input("Please enter today's happiness score: "))
+        happiness = self.get_happiness_from_user()
         self._entries.append({"date": date,
                               "weekday": weekday,
                               "file": file,
@@ -84,7 +89,14 @@ class Diary:
         date_list = str(date).split("-")
         return int(date_list[0]), int(date_list[1]), int(date_list[2])
 
+    def get_happiness_from_user(self):
+        selection = self.list_selection([1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0],
+                                        "How would you rate today?")
+        return float(selection)
+
     def upload_file(self, date, weekday):
+        """Prompts the user to select a file and automatically moves that file
+        to my diary folder of the correct year."""
         confirm = self.list_selection(["Yes", "No"],
                                       f"Would you like to upload a file for {weekday}, {date}?")
         if confirm == "No":
@@ -101,15 +113,18 @@ class Diary:
         if selection == "Cancel":
             return
 
+        root = f'{os.getcwd()}\\new-update-files\\'
         dest = f'C:\\Users\\Colin\\Desktop\\Master Folder\\Projects\\Diary\\{datetime.date.today().year}'
-        self.move_file(selection, dest)
+        self.move_file(root + selection, dest)
         return f"{dest}\\selection"
 
     def move_file(self, file, dest):
-        src = f'{os.getcwd()}\\new-update-files\\'
-        shutil.copy(src + file, dest)
+        """Accepts a file and a destination and moves that file to the destination."""
+        shutil.copy(file, dest)
 
     def list_selection(self, choices, message=""):
+        """Receives a list of choices and an optional message, and users the inquirer
+        module to present those options to the user. Returns the user selection."""
         options = [
             inquirer.List('list',
                           message=message,
@@ -117,7 +132,6 @@ class Diary:
                           )]
         selection = inquirer.prompt(options)
         return selection["list"]
-
 
     def get_summary_from_user(self, date, weekday):
         """Prompts the user through a detailed summary for a given date."""
@@ -133,7 +147,11 @@ class Diary:
                   f"During the evening, I {evening}\nOverall, I'd say today was {opinion}"
         return summary
 
+    def search_entries(self):
+        pass
+
 
 if __name__ == '__main__':
     test = Diary()
-    # print(test.get_summary_from_user(datetime.date.today(), "Tuesday"))
+    test.update_diary()
+    print(test.get_last_entry())
