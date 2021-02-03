@@ -28,12 +28,17 @@ class Diary:
         """Returns the current day of the week."""
         return datetime.date.today().strftime("%A")
 
+    def get_first_entry(self):
+        """Returns the first ever diary entry, or None if there are no entries."""
+        if not self._entries:
+            return None
+        return self._entries[0]
+
     def get_last_entry(self):
         """Returns the most recent diary entry, or None if there are
         no entries."""
         if not self._entries:
             return None
-
         return self._entries[-1]
 
     def get_total_entries(self):
@@ -48,13 +53,38 @@ class Diary:
                 count += 1
 
     def get_happiest_year(self):
-        pass
+        year_sum = {}
+        year_count = {}
+        for entry in self._entries:
+            year, month, day = self.split_date(entry["date"])
+            if str(year) in entry[date]:
+
+            # if year not in stats:
+            #     year_sum[str(year)] = 0
+            #     year_count[str(year)] = 0
+            # else:
+            #     year_sum[str(year)] += entry["happiness"]
+            #     year_count[str(year)] += 1
 
     def get_happiest_month(self):
         pass
 
     def get_happiest_weekday(self):
-        pass
+        for entry in self._entries:
+            if entry["weekday"] == "Sunday":
+
+            elif entry["weekday"] == "Monday":
+                pass
+            elif entry["weekday"] == "Tuesday":
+                pass
+            elif entry["weekday"] == "Wednesday":
+                pass
+            elif entry["weekday"] == "Thursday":
+                pass
+            elif entry["weekday"] == "Friday":
+                pass
+            elif entry["weekday"] == "Saturday":
+                pass
 
     def get_most_mentioned_person(self):
         pass
