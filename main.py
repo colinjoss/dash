@@ -37,7 +37,8 @@ class Diary:
         return self._entries[-1]
 
     def get_total_entries(self):
-        pass
+        """Returns the total number of user-submitted entires."""
+        return len(self._entries)
 
     def get_total_files(self):
         pass
@@ -135,7 +136,7 @@ class Diary:
             people.add(person.lower())
             count += 1
             selection = self.list_selection(["Yes", "No"], "Add another name?")
-            if selection is "No":
+            if selection == "No":
                 done = True
 
     def upload_file(self, date, weekday):
@@ -202,5 +203,4 @@ class Diary:
 
 if __name__ == '__main__':
     test = Diary()
-    test.update_diary()
-    print(test.get_last_entry())
+    print(test.get_total_entries())
