@@ -36,6 +36,24 @@ class Diary:
 
         return self._entries[-1]
 
+    def get_total_entries(self):
+        pass
+
+    def get_total_files(self):
+        pass
+
+    def get_happiest_year(self):
+        pass
+
+    def get_happiest_month(self):
+        pass
+
+    def get_happiest_weekday(self):
+        pass
+
+    def get_most_mentioned_person(self):
+        pass
+
     def add_first_entry(self):
         self.new_entry(self.get_date(), self.get_weekday())
 
@@ -78,21 +96,47 @@ class Diary:
         file = self.upload_file(day, weekday)
         summary = self.get_summary_from_user(date, weekday)
         happiness = self.get_happiness_from_user()
+        people = self.get_people_from_user()
         self._entries.append({"date": date,
                               "weekday": weekday,
                               "file": file,
                               "summary": summary,
-                              "happiness": happiness})
+                              "happiness": happiness,
+                              "people": people})
 
-    def split_date(self, date):
-        """Splits a hyphenated date into its year/month/day parts, and returns each as an int."""
-        date_list = str(date).split("-")
-        return int(date_list[0]), int(date_list[1]), int(date_list[2])
+    def get_summary_from_user(self, date, weekday):
+        """Prompts the user through a detailed summary for a given date."""
+        print(f"This is the summary for {weekday}, {date}.")
+        print("Remember to be as detailed as possible - and to use as many "
+              "KEYWORDS as you can!")
+        morning = str(input("This morning, I... "))
+        afternoon = str(input("In the afternoon, I... "))
+        evening = str(input("During the evening, I... "))
+        opinion = str(input("Overall, I'd say today was... "))
+
+        summary = f"This morning, I {morning}\nIn the afternoon, I {afternoon}\n" \
+                  f"During the evening, I {evening}\nOverall, I'd say today was {opinion}"
+        return summary
 
     def get_happiness_from_user(self):
+        """Prompts users to select from a list of ratings and then returns that rating."""
         selection = self.list_selection([1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0],
                                         "How would you rate today?")
         return float(selection)
+
+    def get_people_from_user(self):
+        """Prompts users to input the names of people until they exit."""
+        done = False
+        count = 1
+        people = set()
+        print("Please input all the names of people - first and last - who are noteworthy to this day.")
+        while done is False:
+            person = str(input(f"{count}: "))
+            people.add(person.lower())
+            count += 1
+            selection = self.list_selection(["Yes", "No"], "Add another name?")
+            if selection is "No":
+                done = True
 
     def upload_file(self, date, weekday):
         """Prompts the user to select a file and automatically moves that file
@@ -118,6 +162,11 @@ class Diary:
         self.move_file(root + selection, dest)
         return f"{dest}\\selection"
 
+    def split_date(self, date):
+        """Splits a hyphenated date into its year/month/day parts, and returns each as an int."""
+        date_list = str(date).split("-")
+        return int(date_list[0]), int(date_list[1]), int(date_list[2])
+
     def move_file(self, file, dest):
         """Accepts a file and a destination and moves that file to the destination."""
         shutil.copy(file, dest)
@@ -132,20 +181,6 @@ class Diary:
                           )]
         selection = inquirer.prompt(options)
         return selection["list"]
-
-    def get_summary_from_user(self, date, weekday):
-        """Prompts the user through a detailed summary for a given date."""
-        print(f"This is the summary for {weekday}, {date}.")
-        print("Remember to be as detailed as possible - and to use as many "
-              "KEYWORDS as you can!")
-        morning = str(input("This morning, I... "))
-        afternoon = str(input("In the afternoon, I... "))
-        evening = str(input("During the evening, I... "))
-        opinion = str(input("Overall, I'd say today was... "))
-
-        summary = f"This morning, I {morning}\nIn the afternoon, I {afternoon}\n" \
-                  f"During the evening, I {evening}\nOverall, I'd say today was {opinion}"
-        return summary
 
     def search_by_date(self, search_date):
         """Accepts a search date and returns a list of matches."""
