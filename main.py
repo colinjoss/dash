@@ -126,13 +126,19 @@ class Diary:
             return
 
         last_date = last_entry["date"]
-        if last_date != self.get_date():
+        if last_date != self.get_current_date():
             self.catch_up(last_date)
 
-        current_date = self.get_date()
+        year = self.get_current_year()
+        if year not in self._entries:
+            self._entries[year] = {}
 
+        month = self.get_current_month()
+        if month not in self._entries[year]:
+            self._entries[year][month] = []
 
-        self.new_entry(current_date, self.get_weekday())
+        entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
+        self._entries[year][month].append(entry)
 
     def catch_up(self, last_date):
         """If update_diary determines the current date and the last date the diary was updated
@@ -161,12 +167,12 @@ class Diary:
         summary = self.get_summary_from_user(date, weekday)
         happiness = self.get_happiness_from_user()
         people = self.get_people_from_user()
-        self._entries.append({"date": date,
-                              "weekday": weekday,
-                              "file": file,
-                              "summary": summary,
-                              "happiness": happiness,
-                              "people": people})
+        return {"date": date,
+                "weekday": weekday,
+                "file": file,
+                "summary": summary,
+                "happiness": happiness,
+                "people": people}
 
     def get_summary_from_user(self, date, weekday):
         """Prompts the user through a detailed summary for a given date."""
