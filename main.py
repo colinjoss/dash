@@ -60,7 +60,13 @@ class Diary:
 
     def get_total_files(self):
         """Returns the total number of user-submitted files."""
-        pass
+        count = 0
+        for year in self._entries:
+            for month in self._entries[year]:
+                for entry in self._entries[year][month]:
+                    if entry["file"] != None:
+                        count += 1
+        return count
 
     def get_happiest_year(self):
         pass
