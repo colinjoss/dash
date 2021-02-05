@@ -19,14 +19,23 @@ class Diary:
         with open("save_data.json", "r") as infile:
             data = json.load(infile)
             self._entries = data[0]
+            self._stats = []
 
-    def get_date(self):
+    def get_current_date(self):
         """Returns the current date."""
         return datetime.date.today()
 
-    def get_weekday(self):
-        """Returns the current day of the week."""
+    def get_current_weekday(self):
+        """Returns the current day of the week as a string."""
         return datetime.date.today().strftime("%A")
+
+    def get_current_month(self):
+        """Returns the current month of the year as a string."""
+        return datetime.date.today().strftime("%B")
+
+    def get_current_year(self):
+        """Returns the current year as a string."""
+        return datetime.date.today().strftime("%Y")
 
     def get_first_entry(self):
         """Returns the first ever diary entry, or None if there are no entries."""
@@ -52,19 +61,36 @@ class Diary:
             if entry["file"] is not None:
                 count += 1
 
-    def get_happiest_year(self):
-        year_sum = {}
-        year_count = {}
+    def get_happiest_year(self, i=0, current_year=None, happiest=None):
+        year_stats = []
+        last_year = None
+        sum = None
+        count = None
+        average = None
         for entry in self._entries:
-            year, month, day = self.split_date(entry["date"])
-            if str(year) in entry[date]:
+            current_year, month, day = self.split_date(entry["date"])
+            if last_year is None:
+                sum = self._entries["happiness"]
+                count = 1
+            elif current_year != last_year:
+                average = sum / count
+                year_stats.append([last_year, average])
+                sum = self._entries["happiness"]
+                count = 1
+            else:
+                sum += self._entries["happiness"]
+                count += 1
+            last_year = current_year
 
-            # if year not in stats:
-            #     year_sum[str(year)] = 0
-            #     year_count[str(year)] = 0
-            # else:
-            #     year_sum[str(year)] += entry["happiness"]
-            #     year_count[str(year)] += 1
+        biggest = None
+        for stat in year_stats:
+            if biggest is None:
+                biggest = stat
+            elif biggest < stat[1]:
+                biggest = stat
+            else:
+                continue
+        return biggest
 
     def get_happiest_month(self):
         pass
@@ -72,7 +98,7 @@ class Diary:
     def get_happiest_weekday(self):
         for entry in self._entries:
             if entry["weekday"] == "Sunday":
-
+                pass
             elif entry["weekday"] == "Monday":
                 pass
             elif entry["weekday"] == "Tuesday":
@@ -103,7 +129,10 @@ class Diary:
         if last_date != self.get_date():
             self.catch_up(last_date)
 
-        self.new_entry(self.get_date(), self.get_weekday())
+        current_date = self.get_date()
+
+
+        self.new_entry(current_date, self.get_weekday())
 
     def catch_up(self, last_date):
         """If update_diary determines the current date and the last date the diary was updated
