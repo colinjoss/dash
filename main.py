@@ -105,22 +105,25 @@ class Diary:
 
         return self.sort_dict_by_value(happiness, True)
 
-    def get_year_days_by_happiness(self, year, level):
-        """Returns a list of all days with a particular happiness level in a given year."""
+    def get_entries_by_happiness(self, level, year=None, month=None):
         days = []
-        for month in self._entries[year]:
-            for entry in self._entries[month]:
-                if entry["happiness"] == level:
-                    days.append(entry)
-        return days
+        if year is None:                                        # If the user did not input a year, the function
+            for year in self._entries:                          # returns all matching entries available
+                for month in self._entries[year]:
+                    for entry in self._entries[year][month]:
+                        if entry["happiness"] == level:
+                            days.append(entry)
 
-    def get_month_days_by_happiness(self, month, year, level):
-        """Returns a list of all days with a particular happiness level in a given month."""
-        days = []
-        for entry in self._entries[year][month]:
-            if entry["happiness"] == level:
-                days.append(entry)
-        return days
+        elif month is None:                                     # If the user inputted a year but not a month, the
+            for month in self._entries[year]:                   # function returns all matching entries in that year
+                for entry in self._entries[year][month]:
+                    if entry["happiness"] == level:
+                        days.append(entry)
+
+        else:
+            for entry in self._entries[year][month]:            # If the user inputted both a month and a year, the
+                if entry["happiness"] == level:                 # function returns all matching entries in that month
+                    days.append(entry)
 
     def get_most_mentioned_person_of_year(self, year):
         pass
