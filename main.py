@@ -52,65 +52,24 @@ class Diary:
 
     def get_total_entries(self):
         """Returns the total number of user-submitted entries."""
-        return len(self._entries)
+        count = 0
+        for year in self._entries:
+            for month in self._entries[year]:
+                count += len(self._entries[year][month])
+        return count
 
     def get_total_files(self):
         """Returns the total number of user-submitted files."""
-        count = 0
-        for entry in self._entries:
-            if entry["file"] is not None:
-                count += 1
+        pass
 
-    def get_happiest_year(self, i=0, current_year=None, happiest=None):
-        year_stats = []
-        last_year = None
-        sum = None
-        count = None
-        average = None
-        for entry in self._entries:
-            current_year, month, day = self.split_date(entry["date"])
-            if last_year is None:
-                sum = self._entries["happiness"]
-                count = 1
-            elif current_year != last_year:
-                average = sum / count
-                year_stats.append([last_year, average])
-                sum = self._entries["happiness"]
-                count = 1
-            else:
-                sum += self._entries["happiness"]
-                count += 1
-            last_year = current_year
-
-        biggest = None
-        for stat in year_stats:
-            if biggest is None:
-                biggest = stat
-            elif biggest < stat[1]:
-                biggest = stat
-            else:
-                continue
-        return biggest
+    def get_happiest_year(self):
+        pass
 
     def get_happiest_month(self):
         pass
 
     def get_happiest_weekday(self):
-        for entry in self._entries:
-            if entry["weekday"] == "Sunday":
-                pass
-            elif entry["weekday"] == "Monday":
-                pass
-            elif entry["weekday"] == "Tuesday":
-                pass
-            elif entry["weekday"] == "Wednesday":
-                pass
-            elif entry["weekday"] == "Thursday":
-                pass
-            elif entry["weekday"] == "Friday":
-                pass
-            elif entry["weekday"] == "Saturday":
-                pass
+        pass
 
     def get_most_mentioned_person(self):
         pass
