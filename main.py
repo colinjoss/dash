@@ -7,11 +7,8 @@ import json
 import os
 import shutil
 import inquirer
+import operator
 import calendar
-
-
-# print(calendar.setfirstweekday(6))
-# print(calendar.month(2021, 2))
 
 
 class Diary:
@@ -69,10 +66,35 @@ class Diary:
         return count
 
     def get_happiest_year(self):
-        pass
+        """Returns the happiest year according the average of happiness ratings."""
+        happiness = {}
+        for year in self._entries:
+            happiness[year] = [0, 0]
+            for month in self._entries[year]:
+                for entry in self._entries[year][month]:
+                    happiness[year][0] += entry["happiness"]
+                    happiness[year][1] += 1
+            happiness[year] = happiness[year][0] / happiness[year][1]
+
+        return {k: v for k, v in sorted(        # Returns a new dictionary
+            happiness.items(),                  # Selecting from the dictionary "happiness" as a list of tuples
+            key=lambda v: v[1],                 # Sorting according to the second item in the tuple, AKA the value
+            reverse=True)}                      # Reversing because by default it sorts in ascending order
 
     def get_happiest_month(self):
-        pass
+        happiness = {}
+        for year in self._entries:
+            for month in self._entries[year]:
+                happiness[f"{month}-{year}"] = [0, 0]
+                for entry in self._entries[year][month]:
+                    happiness[f"{month}-{year}"][0] += entry["happiness"]
+                    happiness[f"{month}-{year}"][1] += 1
+                happiness[f"{month}-{year}"] = happiness[f"{month}-{year}"][0] / happiness[f"{month}-{year}"][1]
+
+        return {k: v for k, v in sorted(        # Returns a new dictionary
+            happiness.items(),                  # Selecting from the dictionary "happiness" as a list of tuples
+            key=lambda v: v[1],                 # Sorting according to the second item in the tuple, AKA the value
+            reverse=True)}                      # Reversing because by default it sorts in ascending order
 
     def get_happiest_weekday(self):
         pass
