@@ -61,12 +61,12 @@ class Diary:
         for year in self._entries:
             for month in self._entries[year]:
                 for entry in self._entries[year][month]:
-                    if entry["file"] != None:
+                    if entry["file"] is not None:
                         count += 1
         return count
 
     def get_happiest_year(self):
-        """Returns the happiest year according the average of happiness ratings."""
+        """Returns the happiest year according to the average of happiness ratings."""
         happiness = {}
         for year in self._entries:
             happiness[year] = [0, 0]
@@ -76,31 +76,61 @@ class Diary:
                     happiness[year][1] += 1
             happiness[year] = happiness[year][0] / happiness[year][1]
 
-        return {k: v for k, v in sorted(        # Returns a new dictionary
-            happiness.items(),                  # Selecting from the dictionary "happiness" as a list of tuples
-            key=lambda v: v[1],                 # Sorting according to the second item in the tuple, AKA the value
-            reverse=True)}                      # Reversing because by default it sorts in ascending order
+        return self.sort_dict_by_value(happiness, True)
 
-    def get_happiest_month(self):
+    def get_happiest_month(self, year):
+        """Returns the happiest month of a given year."""
         happiness = {}
-        for year in self._entries:
-            for month in self._entries[year]:
-                happiness[f"{month}-{year}"] = [0, 0]
-                for entry in self._entries[year][month]:
-                    happiness[f"{month}-{year}"][0] += entry["happiness"]
-                    happiness[f"{month}-{year}"][1] += 1
-                happiness[f"{month}-{year}"] = happiness[f"{month}-{year}"][0] / happiness[f"{month}-{year}"][1]
+        for month in self._entries[year]:
+            happiness[month] = [0, 0]
+            for entry in self._entries[year][month]:
+                happiness[month][0] += entry["happiness"]
+                happiness[month][1] += 1
+            happiness[month] = happiness[month][0] / happiness[month][1]
 
-        return {k: v for k, v in sorted(        # Returns a new dictionary
-            happiness.items(),                  # Selecting from the dictionary "happiness" as a list of tuples
-            key=lambda v: v[1],                 # Sorting according to the second item in the tuple, AKA the value
-            reverse=True)}                      # Reversing because by default it sorts in ascending order
+        return self.sort_dict_by_value(happiness, True)
 
-    def get_happiest_weekday(self):
+    def get_happiest_weekday(self, year):
+        """Returns the happiest weekday of a given year."""
+        happiness = {"Sunday": [0, 0], "Monday": [0, 0], "Tuesday": [0, 0],
+                     "Wednesday": [0, 0], "Thursday": [0, 0], "Friday": [0, 0],
+                     "Saturday": [0, 0]}
+        for month in self._entries[year]:
+            for entry in self._entries[month]:
+                happiness[entry["weekday"]][0] += entry["happiness"]
+                happiness[entry["weekday"]][0] += 1
+
+        for weekday in happiness:
+            happiness[weekday] = happiness[weekday][0] / happiness[weekday][1]
+
+        return self.sort_dict_by_value(happiness, True)
+
+    def get_year_days_by_happiness(self, year, level):
+        """Returns a list of all days with a particular happiness level in a given year."""
+        days = []
+        for month in self._entries[year]:
+            for entry in self._entries[month]:
+                if entry["happiness"] == level:
+                    days.append(entry)
+        return days
+
+    def get_month_days_by_happiness(self, month, year, level):
+        """Returns a list of all days with a particular happiness level in a given month."""
+        days = []
+        for entry in self._entries[year][month]:
+            if entry["happiness"] == level:
+                days.append(entry)
+        return days
+
+    def get_most_mentioned_person_of_year(self, year):
         pass
 
-    def get_most_mentioned_person(self):
-        pass
+    def sort_dict_by_value(self, dict, order):
+        """Accepts a dictionary and returns the dictionary sorted by value."""
+        return {k: v for k, v in sorted(    # Returns a new dictionary
+            dict.items(),                   # Selecting from the dictionary "happiness" as a list of tuples
+            key=lambda pair: pair[1],       # Sorting according to the second item in the tuple, AKA the value
+            reverse=bool(order))}           # Reversing because by default it sorts in ascending order
 
     def add_first_entry(self):
         self.new_entry(self.get_date(), self.get_weekday())
