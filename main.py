@@ -66,7 +66,7 @@ class Diary:
         return count
 
     def get_happiest_year(self):
-        """Returns the happiest year according to the average of happiness ratings."""
+        """Returns a sorted dictionary of the happiest years and their averages."""
         happiness = {}
         for year in self._entries:
             happiness[year] = [0, 0]
@@ -79,7 +79,8 @@ class Diary:
         return self.sort_dict_by_value(happiness, True)
 
     def get_happiest_month(self, year):
-        """Returns the happiest month of a given year."""
+        """Returns a sorted dictionary of the happiest months
+        (in a given year) and their averages."""
         happiness = {}
         for month in self._entries[year]:
             happiness[month] = [0, 0]
@@ -91,7 +92,8 @@ class Diary:
         return self.sort_dict_by_value(happiness, True)
 
     def get_happiest_weekday(self, year):
-        """Returns the happiest weekday of a given year."""
+        """Returns a dictionary of the happiest weekdays
+        (in a given year) and their averages."""
         happiness = {"Sunday": [0, 0], "Monday": [0, 0], "Tuesday": [0, 0],
                      "Wednesday": [0, 0], "Thursday": [0, 0], "Friday": [0, 0],
                      "Saturday": [0, 0]}
@@ -106,6 +108,8 @@ class Diary:
         return self.sort_dict_by_value(happiness, True)
 
     def get_entries_by_happiness(self, level, year=None, month=None):
+        """Returns a list of entries by a given happiness level, limited by
+        year or month, depending on what the user inputs."""
         days = []
         if year is None:                                        # If the user did not input a year, the function
             for year in self._entries:                          # returns all matching entries available
@@ -125,8 +129,38 @@ class Diary:
                 if entry["happiness"] == level:                 # function returns all matching entries in that month
                     days.append(entry)
 
-    def get_most_mentioned_person_of_year(self, year):
-        pass
+    def get_most_mentioned_people(self, year=None, month=None):
+        """Returns a sorted dictionary of mentioned people and
+        their averages."""
+        people = {}
+        if year is None:
+            for year in self._entries:
+                for month in self._entries[year]:
+                    for entry in self._entries[year][month]:
+                        for person in entry["people"]:
+                            if person.title() not in people:
+                                people[person.title()] = 1
+                            else:
+                                people[person.title()] += 1
+
+        elif month is None:
+            for month in self._entries[year]:
+                for entry in self._entries[year][month]:
+                    for person in entry["people"]:
+                        if person not in people:
+                            people[person.title()] = 1
+                        else:
+                            people[person.title()] += 1
+
+        else:
+            for entry in self._entries[year][month]:
+                for person in entry["people"]:
+                    if person not in people:
+                        people[person.title()] = 1
+                    else:
+                        people[person.title()] += 1
+
+        return self.sort_dict_by_value(people, True)
 
     def sort_dict_by_value(self, dict, order):
         """Accepts a dictionary and returns the dictionary sorted by value."""
