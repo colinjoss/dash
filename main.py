@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import inquirer
+import re
 import operator
 import calendar
 
@@ -328,6 +329,33 @@ class Diary:
 
     def advanced_search(self, search_keywords):
         """Accepts a list of search keywords and returns a list of matches"""
+        search_keywords = []
+        done = False
+        while done is False or search_keywords != 3:
+            search = str(input("Please input a search term: "))
+            search_keywords += search
+            print("Would you like to enter another?")
+            confirm = self.list_selection(["Yes", "No"])
+            if confirm is "No":
+                done = True
+
+        for year in self._entries:
+            for month in self._entries[year]:
+                for entry in self._entries[year][month]:
+                    if search_keywords[0] and search_keywords[1]
+
+    def get_year_from_user(self):
+        """Prompts the user to input a valid year (contained within self._entries).
+        Returns an error statement if the year is invalid."""
+        year = str(input("Please input a year as a four-digit number: "))
+        if len(year) != 4 or year not in self._entries:
+            return print("That is not an acceptable year.")
+        return year
+
+    def save_to_json(self):
+        pass
+
+    def import_stats_from_csv(self):
         pass
 
 
