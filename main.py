@@ -8,6 +8,8 @@ import os
 import shutil
 import inquirer
 import re
+import eyed3
+import math
 import operator
 import calendar
 
@@ -112,22 +114,22 @@ class Diary:
         """Returns a list of entries by a given happiness level, limited by
         year or month, depending on what the user inputs."""
         days = []
-        if year is None:                                        # If the user did not input a year, the function
-            for year in self._entries:                          # returns all matching entries available
+        if year is None:  # If the user did not input a year, the function
+            for year in self._entries:  # returns all matching entries available
                 for month in self._entries[year]:
                     for entry in self._entries[year][month]:
                         if entry["happiness"] == level:
                             days.append(entry)
 
-        elif month is None:                                     # If the user inputted a year but not a month, the
-            for month in self._entries[year]:                   # function returns all matching entries in that year
+        elif month is None:  # If the user inputted a year but not a month, the
+            for month in self._entries[year]:  # function returns all matching entries in that year
                 for entry in self._entries[year][month]:
                     if entry["happiness"] == level:
                         days.append(entry)
 
         else:
-            for entry in self._entries[year][month]:            # If the user inputted both a month and a year, the
-                if entry["happiness"] == level:                 # function returns all matching entries in that month
+            for entry in self._entries[year][month]:  # If the user inputted both a month and a year, the
+                if entry["happiness"] == level:  # function returns all matching entries in that month
                     days.append(entry)
 
     def get_most_mentioned_people(self, year=None, month=None):
@@ -165,10 +167,10 @@ class Diary:
 
     def sort_dict_by_value(self, dict, order):
         """Accepts a dictionary and returns the dictionary sorted by value."""
-        return {k: v for k, v in sorted(    # Returns a new dictionary
-            dict.items(),                   # Selecting from the dictionary "happiness" as a list of tuples
-            key=lambda pair: pair[1],       # Sorting according to the second item in the tuple, AKA the value
-            reverse=bool(order))}           # Reversing because by default it sorts in ascending order
+        return {k: v for k, v in sorted(  # Returns a new dictionary
+            dict.items(),  # Selecting from the dictionary "happiness" as a list of tuples
+            key=lambda pair: pair[1],  # Sorting according to the second item in the tuple, AKA the value
+            reverse=bool(order))}  # Reversing because by default it sorts in ascending order
 
     def add_first_entry(self):
         self.new_entry(self.get_date(), self.get_weekday())
@@ -218,16 +220,32 @@ class Diary:
         then adds the entry to the list of all entries."""
         date = day
         weekday = weekday
-        file = self.upload_file(day, weekday)
         summary = self.get_summary_from_user(date, weekday)
         happiness = self.get_happiness_from_user()
         people = self.get_people_from_user()
+        file = self.upload_file(day, weekday)
+        length = None
         return {"date": date,
                 "weekday": weekday,
-                "file": file,
                 "summary": summary,
                 "happiness": happiness,
-                "people": people}
+                "people": people,
+                "file": file,
+                "length": length}
+    def get_mp3_file_length(self, file):
+        """Accepts a file path and returns the length of the linked file if it is an mp3,
+        but None if it is any other file type."""
+        if self.get_file_type(file) != ".mp3":
+            return None
+
+        metadata = eyed3.load(file)
+        length = metadata.info.time_secs
+        minutes, seconds = divmod(length, 60)
+        hours = math.floor(minutes) / 60
+        return f"{math.floor(hours)}:{math.floor(minutes)}:{math.floor(seconds)}"
+
+    def get_file_type(self, file):
+        return file.split(".")[1]
 
     def get_summary_from_user(self, date, weekday):
         """Prompts the user through a detailed summary for a given date."""
@@ -326,23 +344,6 @@ class Diary:
                     if search_keyword in entry["summary"]:
                         search_match.append(entry)
         return search_match
-
-    def advanced_search(self, search_keywords):
-        """Accepts a list of search keywords and returns a list of matches"""
-        search_keywords = []
-        done = False
-        while done is False or search_keywords != 3:
-            search = str(input("Please input a search term: "))
-            search_keywords += search
-            print("Would you like to enter another?")
-            confirm = self.list_selection(["Yes", "No"])
-            if confirm is "No":
-                done = True
-
-        for year in self._entries:
-            for month in self._entries[year]:
-                for entry in self._entries[year][month]:
-                    if search_keywords[0] and search_keywords[1]
 
     def get_year_from_user(self):
         """Prompts the user to input a valid year (contained within self._entries).
