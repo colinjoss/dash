@@ -346,11 +346,25 @@ class Diary:
 
     def get_year_from_user(self):
         """Prompts the user to input a valid year (contained within self._entries).
-        Returns an error statement if the year is invalid."""
+        Returns None if year is invalid."""
         year = str(input("Please input a year as a four-digit number: "))
         if len(year) != 4 or year not in self._entries:
-            return print("That is not an acceptable year.")
+            return None
         return year
+
+    def get_month_from_user(self):
+        """Prompts the user to input a valid month as a number. Returns the
+        number converted to string equivalent or None."""
+        month = str(input("Please input a month as a number between 1 - 12: "))
+        return self.convert_num_to_month(month)
+
+    def convert_num_to_month(self, num):
+        """Accepts a number between 1-12 and returns matching month, or None if no match."""
+        month_list = ["January", "February", "March", "April", "May", "June",
+                      "July", "August", "September", "October", "November", "December"]
+        if re.search("[0-9]", num):
+            return month_list[int(num)]
+        return None
 
     def save_to_json(self):
         pass
