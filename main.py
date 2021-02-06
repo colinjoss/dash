@@ -309,21 +309,27 @@ class Diary:
     def search_by_date(self, search_date):
         """Accepts a search date and returns a list of matches."""
         search_match = []
-        if search_date in self._entries:
-            search_match.append(self._entries[search_date])
+        for year in self._entries:
+            for month in self._entries[year]:
+                for entry in self._entries[year][month]:
+                    if search_date in entry["date"]:
+                        search_match.append(entry)
         return search_match
 
     def search_by_keyword(self, search_keyword):
         """Accepts a search keyword and returns a list of matches."""
         search_match = []
-        for entry in self._entries:
-            if search_keyword in entry["summary"]:
-                search_match.append(entry)
+        for year in self._entries:
+            for month in self._entries[year]:
+                for entry in self._entries[year][month]:
+                    if search_keyword in entry["summary"]:
+                        search_match.append(entry)
+        return search_match
 
-    def advanced_search(self):
+    def advanced_search(self, search_keywords):
+        """Accepts a list of search keywords and returns a list of matches"""
         pass
 
 
 if __name__ == '__main__':
     test = Diary()
-    print(test.get_total_entries())
