@@ -10,8 +10,9 @@ import inquirer
 import re
 import eyed3
 import math
-import operator
-import calendar
+import csv
+# import operator
+# import calendar
 
 
 class Diary:
@@ -19,7 +20,26 @@ class Diary:
         with open("save_data.json", "r") as infile:
             data = json.load(infile)
             self._entries = data[0]
-            self._stats = []
+
+    def main_menu(self):
+        done = False
+        while done is False:
+            selection = self.list_selection(["Update", "Search", "Statistics", "Close"],
+                                            "Welcome to you Diary Assistant!")
+            if selection == "Update":
+                pass
+                # Update diary func
+            elif selection == "Search":
+                pass
+
+            elif selection == "Statistics":
+                pass
+                # Display all stats func
+            else:
+                done = True
+                # Save!!!
+                # Update spreadsheet
+                print("Goodbye!")
 
     def get_current_date(self):
         """Returns the current date."""
@@ -165,6 +185,74 @@ class Diary:
 
         return self.sort_dict_by_value(people, True)
 
+    def get_mp3_file_length(self, file):
+        """Accepts a file path and returns the length of the linked file if it is an mp3,
+        but None if it is any other file type."""
+        if not isinstance(file, str):
+            return None
+
+        if self.get_file_type(str(file)) == ".mp3":
+            return None
+
+        metadata = eyed3.load(file)
+        length = metadata.info.time_secs
+        minutes, seconds = divmod(length, 60)
+        hours = math.floor(minutes) / 60
+        return f"{math.floor(hours)}:{math.floor(minutes)}:{math.floor(seconds)}"
+
+    def get_file_type(self, file):
+        """Removes the file extension from a path and returns it as a string."""
+        print(file[-4])
+        return file[-4]
+
+    def get_summary_from_user(self, date, weekday):
+        """Prompts the user through a detailed summary for a given date."""
+        print(f"This is the summary for {weekday}, {date}.")
+        print("Remember to be as detailed as possible - and to use as many "
+              "KEYWORDS as you can!")
+        morning = str(input("This morning, I... "))
+        afternoon = str(input("In the afternoon, I... "))
+        evening = str(input("During the evening, I... "))
+        opinion = str(input("Overall, I'd say today was... "))
+
+        summary = f"This morning, I {morning}\nIn the afternoon, I {afternoon}\n" \
+                  f"During the evening, I {evening}\nOverall, I'd say today was {opinion}"
+        return summary
+
+    def get_happiness_from_user(self):
+        """Prompts users to select from a list of ratings and then returns that rating."""
+        selection = self.list_selection([1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0],
+                                        "How would you rate today?")
+        return float(selection)
+
+    def get_people_from_user(self):
+        """Prompts users to input the names of people until they exit."""
+        done = False
+        count = 1
+        people = set()
+        print("Please input all the names of people - first and last - who are noteworthy to this day.")
+        while done is False:
+            person = str(input(f"{count}: "))
+            people.add(person.lower())
+            count += 1
+            selection = self.list_selection(["Yes", "No"], "Add another name?")
+            if selection == "No":
+                done = True
+
+    def get_year_from_user(self):
+        """Prompts the user to input a valid year (contained within self._entries).
+        Returns None if year is invalid."""
+        year = str(input("Please input a year as a four-digit number: "))
+        if len(year) != 4 or year not in self._entries:
+            return None
+        return year
+
+    def get_month_from_user(self):
+        """Prompts the user to input a valid month as a number. Returns the
+        number converted to string equivalent or None."""
+        month = str(input("Please input a month as a number between 1 - 12: "))
+        return self.convert_num_to_month(month)
+
     def sort_dict_by_value(self, dict, order):
         """Accepts a dictionary and returns the dictionary sorted by value."""
         return {k: v for k, v in sorted(  # Returns a new dictionary
@@ -173,7 +261,7 @@ class Diary:
             reverse=bool(order))}  # Reversing because by default it sorts in ascending order
 
     def add_first_entry(self):
-        self.new_entry(self.get_date(), self.get_weekday())
+        self.new_entry(self.get_current_date(), self.get_current_weekday())
 
     def update_diary(self):
         """Records new diary entry(s)."""
@@ -224,7 +312,7 @@ class Diary:
         happiness = self.get_happiness_from_user()
         people = self.get_people_from_user()
         file = self.upload_file(day, weekday)
-        length = None
+        length = self.get_mp3_file_length(file)
         return {"date": date,
                 "weekday": weekday,
                 "summary": summary,
@@ -232,78 +320,34 @@ class Diary:
                 "people": people,
                 "file": file,
                 "length": length}
-    def get_mp3_file_length(self, file):
-        """Accepts a file path and returns the length of the linked file if it is an mp3,
-        but None if it is any other file type."""
-        if self.get_file_type(file) != ".mp3":
-            return None
-
-        metadata = eyed3.load(file)
-        length = metadata.info.time_secs
-        minutes, seconds = divmod(length, 60)
-        hours = math.floor(minutes) / 60
-        return f"{math.floor(hours)}:{math.floor(minutes)}:{math.floor(seconds)}"
-
-    def get_file_type(self, file):
-        return file.split(".")[1]
-
-    def get_summary_from_user(self, date, weekday):
-        """Prompts the user through a detailed summary for a given date."""
-        print(f"This is the summary for {weekday}, {date}.")
-        print("Remember to be as detailed as possible - and to use as many "
-              "KEYWORDS as you can!")
-        morning = str(input("This morning, I... "))
-        afternoon = str(input("In the afternoon, I... "))
-        evening = str(input("During the evening, I... "))
-        opinion = str(input("Overall, I'd say today was... "))
-
-        summary = f"This morning, I {morning}\nIn the afternoon, I {afternoon}\n" \
-                  f"During the evening, I {evening}\nOverall, I'd say today was {opinion}"
-        return summary
-
-    def get_happiness_from_user(self):
-        """Prompts users to select from a list of ratings and then returns that rating."""
-        selection = self.list_selection([1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0],
-                                        "How would you rate today?")
-        return float(selection)
-
-    def get_people_from_user(self):
-        """Prompts users to input the names of people until they exit."""
-        done = False
-        count = 1
-        people = set()
-        print("Please input all the names of people - first and last - who are noteworthy to this day.")
-        while done is False:
-            person = str(input(f"{count}: "))
-            people.add(person.lower())
-            count += 1
-            selection = self.list_selection(["Yes", "No"], "Add another name?")
-            if selection == "No":
-                done = True
 
     def upload_file(self, date, weekday):
         """Prompts the user to select a file and automatically moves that file
         to my diary folder of the correct year."""
-        confirm = self.list_selection(["Yes", "No"],
+        confirm = self.list_selection(["Yes", "No"],            # Asks the user if they want to upload a file
                                       f"Would you like to upload a file for {weekday}, {date}?")
         if confirm == "No":
             return
 
-        os.chdir(os.getcwd() + "\\new-update-files")
+        os.chdir(os.getcwd() + "\\new-update-files")            # Changes directory to new-update-files
+        # print("The current directory is: " + os.getcwd())
         files = []
-        files += os.listdir()
+        files += os.listdir()                                   # Saves all files in this directory
         if not files:
             return print("There are no files to upload.")
         files.append("Cancel")
 
-        selection = self.list_selection(files, "Which file?")
+        selection = self.list_selection(files, "Which file?")   # Asks user to select file
         if selection == "Cancel":
-            return
+            return None
 
-        root = f'{os.getcwd()}\\new-update-files\\'
-        dest = f'C:\\Users\\Colin\\Desktop\\Master Folder\\Projects\\Diary\\{datetime.date.today().year}'
-        self.move_file(root + selection, dest)
-        return f"{dest}\\selection"
+        root = f'{os.getcwd()}\\'
+        year, month, day = self.split_date(date)
+        dest = f'C:\\Users\\Colin\\Desktop\\Master Folder\\Projects\\Diary\\{datetime.date(year, month, day).year}'
+        self.move_file(root + selection, dest)                  # Moves target file to appropriate diary folder
+        os.chdir("..")
+        # print(f"This is what's being saved: {dest}\\{selection}")
+        return f"{dest}\\{selection}"
 
     def split_date(self, date):
         """Splits a hyphenated date into its year/month/day parts, and returns each as an int."""
@@ -313,6 +357,7 @@ class Diary:
     def move_file(self, file, dest):
         """Accepts a file and a destination and moves that file to the destination."""
         shutil.copy(file, dest)
+        os.remove(file)
 
     def list_selection(self, choices, message=""):
         """Receives a list of choices and an optional message, and users the inquirer
@@ -345,34 +390,66 @@ class Diary:
                         search_match.append(entry)
         return search_match
 
-    def get_year_from_user(self):
-        """Prompts the user to input a valid year (contained within self._entries).
-        Returns None if year is invalid."""
-        year = str(input("Please input a year as a four-digit number: "))
-        if len(year) != 4 or year not in self._entries:
-            return None
-        return year
-
-    def get_month_from_user(self):
-        """Prompts the user to input a valid month as a number. Returns the
-        number converted to string equivalent or None."""
-        month = str(input("Please input a month as a number between 1 - 12: "))
-        return self.convert_num_to_month(month)
-
     def convert_num_to_month(self, num):
         """Accepts a number between 1-12 and returns matching month, or None if no match."""
         month_list = ["January", "February", "March", "April", "May", "June",
                       "July", "August", "September", "October", "November", "December"]
-        if re.search("[0-9]", num):
+        if 1 <= num <= 12:
             return month_list[int(num)]
         return None
 
     def save_to_json(self):
         pass
 
-    def import_stats_from_csv(self):
-        pass
+    def import_stats_from_csv(self, filepath):
+        """Takes a csv file, and if the file is formatted properly,
+        pulls requisite data to create diary entries."""
+        file = csv.reader(open(filepath))                   # Opens the given file
+        rows = list(file)
+
+        for row in rows:                                    # Cycles through the rows, pulling data
+            date = row[0]
+            year, month, day = self.split_date(date)
+            weekday = datetime.date(year, month, day).strftime("%A")
+            month = self.convert_num_to_month(month)
+            summary = None
+            if row[1] != "" and row[1] is not None:
+                summary = row[1]
+            happiness = None
+            if row[2] != "" and row[2] is not None:
+                happiness = float(row[2])
+
+            people = []
+            try:                                            # Gathers list of relevant people, or handles if none
+                i = 3
+                while row[i]:
+                    print(row[i])
+                    people.append(str(row[i]))
+                    i += 1
+            except IndexError:
+                pass
+
+            file = self.upload_file(date, weekday)
+            length = self.get_mp3_file_length(file)
+
+            if str(year) not in self._entries:              # Creates correct dicts / lists if new year / month
+                self._entries[str(year)] = {}
+            if str(month) not in self._entries[str(year)]:
+                self._entries[str(year)][str(month)] = []
+
+            self._entries[str(year)][str(month)].append({   # Creates a new diary entry
+                "date": date,
+                "weekday": weekday,
+                "summary": summary,
+                "happiness": happiness,
+                "people": people,
+                "file": file,
+                "length": length
+            })
+            # print(f"This is the new entry: {self._entries[str(year)][str(month)]}")
 
 
 if __name__ == '__main__':
     test = Diary()
+    test.import_stats_from_csv("C:\\Users\\Colin\\Desktop\\2012.csv")
+    print(test.search_by_date("2013-04-17"))
