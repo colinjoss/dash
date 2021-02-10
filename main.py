@@ -29,18 +29,69 @@ class Diary:
                                             "Welcome to you Diary Assistant!")
             if selection == "Update":
                 self.update_diary()
+
             elif selection == "Search":
                 keyword = str(input("Enter a search term: "))
-                self.search_by_keyword(keyword)
+                results = self.search_by_keyword(keyword)
+                self.display_search_results(results)
+
             elif selection == "Statistics":
                 pass
                 self.display_all_stats()
-                # Display all stats func
+
             else:
                 done = True
                 self.save_to_json()
-                self.update_spreadsheet(self.get_current_date())
+                self.update_spreadsheet(self.get_last_entry())
                 print("Goodbye!")
+
+    def update_diary(self):
+        """Records new diary entry(s)."""
+        last_entry = self.get_last_entry()              # Handles first-ever entry
+        if last_entry is None:
+            self.add_first_entry()
+            return
+
+        last_date = last_entry["date"]                  # If the date of the last entry is not today, calls
+        if last_date != self.get_current_date():        # catch_up to update the missing entries first
+            self.catch_up(last_date)
+
+        year = self.get_current_year()                  # Creates a new year if new year
+        if year not in self._entries:
+            self._entries[year] = {}
+
+        month = self.get_current_month()                # Creates a new month if new month
+        if month not in self._entries[year]:
+            self._entries[year][month] = []
+
+        entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
+        self._entries[year][month].append(entry)        # Prompts user through entry, saves as dictionary
+
+    def search_by_keyword(self, search_keyword):
+        """Accepts a search keyword and returns a list of matches."""
+        search_match = []
+        for year in self._entries:
+            for month in self._entries[year]:
+                for entry in self._entries[year][month]:
+                    if search_keyword in entry["summary"]:
+                        search_match.append(entry)
+        return search_match
+
+    def display_search_results(self, search_results):
+        """Accepts search results in a list and displays them neatly to the terminal."""
+        count = 1
+        for result in search_results:
+            print(str(count) + ": " + + result["weekday"] + ", " + result["date"])
+            print("     summary: " + result["summary"])
+            print("     happiness: " + result["happiness"])
+            print("     file: " + result["file"])
+            print("     file length: "  + result["length"])
+
+    def display_all_stats(self):
+        pass
+
+    def update_spreadsheet(self, last_entry):
+        pass
 
     def get_current_date(self):
         """Returns the current date."""
@@ -264,27 +315,7 @@ class Diary:
     def add_first_entry(self):
         self.new_entry(self.get_current_date(), self.get_current_weekday())
 
-    def update_diary(self):
-        """Records new diary entry(s)."""
-        last_entry = self.get_last_entry()
-        if last_entry is None:
-            self.add_first_entry()
-            return
 
-        last_date = last_entry["date"]
-        if last_date != self.get_current_date():
-            self.catch_up(last_date)
-
-        year = self.get_current_year()
-        if year not in self._entries:
-            self._entries[year] = {}
-
-        month = self.get_current_month()
-        if month not in self._entries[year]:
-            self._entries[year][month] = []
-
-        entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
-        self._entries[year][month].append(entry)
 
     def catch_up(self, last_date):
         """If update_diary determines the current date and the last date the diary was updated
@@ -381,15 +412,7 @@ class Diary:
                         search_match.append(entry)
         return search_match
 
-    def search_by_keyword(self, search_keyword):
-        """Accepts a search keyword and returns a list of matches."""
-        search_match = []
-        for year in self._entries:
-            for month in self._entries[year]:
-                for entry in self._entries[year][month]:
-                    if search_keyword in entry["summary"]:
-                        search_match.append(entry)
-        return search_match
+
 
     def convert_num_to_month(self, num):
         """Accepts a number between 1-12 and returns matching month, or None if no match."""
