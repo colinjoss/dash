@@ -25,7 +25,7 @@ class Diary:
         """Presents a main menu to the user in the terminal."""
         done = False
         while done is False:
-            selection = self.list_selection(["Update", "Search", "Statistics", "Close"],
+            selection = self.list_selection(["Update", "Search", "Close"],
                                             "Welcome to you Diary Assistant!")
             if selection == "Update":
                 self.update_diary()
@@ -34,11 +34,6 @@ class Diary:
                 keyword = str(input("Enter a search term: "))
                 results = self.search_by_keyword(keyword)
                 self.display_search_results(results)
-
-            elif selection == "Statistics":
-                pass
-                self.display_all_stats()
-
             else:
                 done = True
                 self.save_to_json()
@@ -67,6 +62,42 @@ class Diary:
         entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
         self._entries[year][month].append(entry)        # Prompts user through entry, saves as dictionary
 
+    def catch_up(self, last_date):
+        """If update_diary determines the current date and the last date the diary was updated
+        don't match, catch_up is called to prompt the user to update for multiple previous days."""
+        match = False
+        catch_up_days = []
+        while match is False:
+            one_less_day = datetime.date.today() - datetime.timedelta(days=1)
+            if one_less_day == last_date:
+                match = True
+            else:
+                catch_up_days.append(one_less_day)
+
+        for day in catch_up_days:
+            date = day
+            year, month, day = self.split_date(date)
+            weekday = datetime.date(year, month, day).strftime("%A")
+            self.new_entry(day, weekday)
+
+    def new_entry(self, day, weekday):
+        """Prompts the user through the components of a diary entry, and
+        then adds the entry to the list of all entries."""
+        date = day
+        weekday = weekday
+        summary = self.get_summary_from_user(date, weekday)
+        happiness = self.get_happiness_from_user()
+        people = self.get_people_from_user()
+        file = self.upload_file(day, weekday)
+        length = self.get_mp3_file_length(file)
+        return {"date": date,
+                "weekday": weekday,
+                "summary": summary,
+                "happiness": happiness,
+                "people": people,
+                "file": file,
+                "length": length}
+
     def search_by_keyword(self, search_keyword):
         """Accepts a search keyword and returns a list of matches."""
         search_match = []
@@ -79,6 +110,9 @@ class Diary:
 
     def display_search_results(self, search_results):
         """Accepts search results in a list and displays them neatly to the terminal."""
+        if not search_results:
+            return None
+
         count = 1
         for result in search_results:
             print(str(count) + ": " + + result["weekday"] + ", " + result["date"])
@@ -86,12 +120,31 @@ class Diary:
             print("     happiness: " + result["happiness"])
             print("     file: " + result["file"])
             print("     file length: "  + result["length"])
+            count += 1
 
-    def display_all_stats(self):
-        pass
+    def save_to_json(self):
+        """Records entry data to json."""
+        with open("save_data.json", "w") as outfile:
+            all_data = [self._entries]
+            json.dump(all_data, outfile)
 
     def update_spreadsheet(self, last_entry):
-        pass
+        """Creates a spreadsheet and saves the most updated year data to it."""
+        year = self.get_current_year()
+
+        file_count = ""
+        file_length = ""
+        if last_entry["file"] is not None:
+            file_count = self.get_total_files()
+            file_length = last_entry["length"]
+
+        new_row = [last_entry["date"], last_entry["weekday"], last_entry["summary"],
+                   last_entry["happiness"], file_count, file_length]
+        new_row += last_entry["people"]
+
+        with open(f"{year}.csv", "a", newline="") as outfile:
+            csv_file = csv.writer(outfile)
+            csv_file.writerow(new_row)
 
     def get_current_date(self):
         """Returns the current date."""
@@ -317,41 +370,7 @@ class Diary:
 
 
 
-    def catch_up(self, last_date):
-        """If update_diary determines the current date and the last date the diary was updated
-        don't match, catch_up is called to prompt the user to update for multiple previous days."""
-        match = False
-        catch_up_days = []
-        while match is False:
-            one_less_day = datetime.date.today() - datetime.timedelta(days=1)
-            if one_less_day == last_date:
-                match = True
-            else:
-                catch_up_days.append(one_less_day)
 
-        for day in catch_up_days:
-            date = day
-            year, month, day = self.split_date(date)
-            weekday = datetime.date(year, month, day).strftime("%A")
-            self.new_entry(day, weekday)
-
-    def new_entry(self, day, weekday):
-        """Prompts the user through the components of a diary entry, and
-        then adds the entry to the list of all entries."""
-        date = day
-        weekday = weekday
-        summary = self.get_summary_from_user(date, weekday)
-        happiness = self.get_happiness_from_user()
-        people = self.get_people_from_user()
-        file = self.upload_file(day, weekday)
-        length = self.get_mp3_file_length(file)
-        return {"date": date,
-                "weekday": weekday,
-                "summary": summary,
-                "happiness": happiness,
-                "people": people,
-                "file": file,
-                "length": length}
 
     def upload_file(self, date, weekday):
         """Prompts the user to select a file and automatically moves that file
@@ -412,8 +431,6 @@ class Diary:
                         search_match.append(entry)
         return search_match
 
-
-
     def convert_num_to_month(self, num):
         """Accepts a number between 1-12 and returns matching month, or None if no match."""
         month_list = ["January", "February", "March", "April", "May", "June",
@@ -422,8 +439,7 @@ class Diary:
             return month_list[int(num)]
         return None
 
-    def save_to_json(self):
-        pass
+
 
     def import_stats_from_csv(self, filepath):
         """Takes a csv file, and if the file is formatted properly,
@@ -475,5 +491,4 @@ class Diary:
 
 if __name__ == '__main__':
     test = Diary()
-    test.import_stats_from_csv("C:\\Users\\Colin\\Desktop\\2012.csv")
-    print(test.search_by_date("2013-04-17"))
+    # test.import_stats_from_csv("C:\\Users\\Colin\\Desktop\\2012.csv")
