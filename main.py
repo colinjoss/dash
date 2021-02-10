@@ -7,7 +7,6 @@ import json
 import os
 import shutil
 import inquirer
-import re
 import eyed3
 import math
 import csv
@@ -20,25 +19,27 @@ class Diary:
         with open("save_data.json", "r") as infile:
             data = json.load(infile)
             self._entries = data[0]
+            self.main_menu()
 
     def main_menu(self):
+        """Presents a main menu to the user in the terminal."""
         done = False
         while done is False:
             selection = self.list_selection(["Update", "Search", "Statistics", "Close"],
                                             "Welcome to you Diary Assistant!")
             if selection == "Update":
-                pass
-                # Update diary func
+                self.update_diary()
             elif selection == "Search":
-                pass
-
+                keyword = str(input("Enter a search term: "))
+                self.search_by_keyword(keyword)
             elif selection == "Statistics":
                 pass
+                self.display_all_stats()
                 # Display all stats func
             else:
                 done = True
-                # Save!!!
-                # Update spreadsheet
+                self.save_to_json()
+                self.update_spreadsheet(self.get_current_date())
                 print("Goodbye!")
 
     def get_current_date(self):
