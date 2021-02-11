@@ -131,6 +131,10 @@ class Diary:
     def update_spreadsheet(self, last_entry):
         """Creates a spreadsheet and saves the most updated year data to it."""
         year = self.get_current_year()
+        if last_entry is None:
+            return None
+        # if str(year) not in last_entry["date"]:
+        #     return None
 
         file_count = ""
         file_length = ""
@@ -436,10 +440,8 @@ class Diary:
         month_list = ["January", "February", "March", "April", "May", "June",
                       "July", "August", "September", "October", "November", "December"]
         if 1 <= num <= 12:
-            return month_list[int(num)]
+            return month_list[int(num)-1]
         return None
-
-
 
     def import_stats_from_csv(self, filepath):
         """Takes a csv file, and if the file is formatted properly,
@@ -452,25 +454,28 @@ class Diary:
             year, month, day = self.split_date(date)
             weekday = datetime.date(year, month, day).strftime("%A")
             month = self.convert_num_to_month(month)
+            print(month)
+
             summary = None
             if row[1] != "" and row[1] is not None:
                 summary = row[1]
+
             happiness = None
             if row[2] != "" and row[2] is not None:
                 happiness = float(row[2])
 
+            length = None
+            if row[3] != "" and row[3] is not None:
+                length = row[3]
+
             people = []
             try:                                            # Gathers list of relevant people, or handles if none
-                i = 3
+                i = 4
                 while row[i]:
-                    print(row[i])
                     people.append(str(row[i]))
                     i += 1
             except IndexError:
                 pass
-
-            file = self.upload_file(date, weekday)
-            length = self.get_mp3_file_length(file)
 
             if str(year) not in self._entries:              # Creates correct dicts / lists if new year / month
                 self._entries[str(year)] = {}
@@ -483,12 +488,10 @@ class Diary:
                 "summary": summary,
                 "happiness": happiness,
                 "people": people,
-                "file": file,
                 "length": length
             })
-            # print(f"This is the new entry: {self._entries[str(year)][str(month)]}")
 
 
 if __name__ == '__main__':
     test = Diary()
-    # test.import_stats_from_csv("C:\\Users\\Colin\\Desktop\\2012.csv")
+    test.import_stats_from_csv("C:\\Users\\Colin\\Desktop\\2013.csv")
