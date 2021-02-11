@@ -7,7 +7,7 @@ import json
 import os
 import shutil
 import inquirer
-import eyed3
+from mutagen.mp3 import MP3
 import math
 import csv
 # import operator
@@ -46,7 +46,7 @@ class Diary:
             self.add_first_entry()
             return
 
-        last_date = last_entry["date"]                  # If the date of the last entry is not today, calls
+        last_date = self.get_last_entry()["date"]       # If the date of the last entry is not today, calls
         if last_date != self.get_current_date():        # catch_up to update the missing entries first
             self.catch_up(last_date)
 
@@ -66,35 +66,37 @@ class Diary:
         don't match, catch_up is called to prompt the user to update for multiple previous days."""
         match = False
         catch_up_days = []
+        less = 1
+        print(last_date)
         while match is False:
-            one_less_day = datetime.date.today() - datetime.timedelta(days=1)
-            if one_less_day == last_date:
+            one_less_day = datetime.date.today() - datetime.timedelta(days=less)
+            if str(one_less_day) == last_date:
+                print("heeya")
                 match = True
             else:
                 catch_up_days.append(one_less_day)
+            less += 1
 
         for day in catch_up_days:
             date = day
             year, month, day = self.split_date(date)
             weekday = datetime.date(year, month, day).strftime("%A")
-            self.new_entry(day, weekday)
+            self.new_entry(date, weekday)
 
-    def new_entry(self, day, weekday):
+    def new_entry(self, date, weekday):
         """Prompts the user through the components of a diary entry, and
         then adds the entry to the list of all entries."""
-        date = day
+        date = date
         weekday = weekday
         summary = self.get_summary_from_user(date, weekday)
         happiness = self.get_happiness_from_user()
-        people = self.get_people_from_user()
-        file = self.upload_file(day, weekday)
-        length = self.get_mp3_file_length(file)
+        people = self.get_people_from_user(),
+        length = self.get_mp3_file_length()
         return {"date": date,
                 "weekday": weekday,
                 "summary": summary,
                 "happiness": happiness,
                 "people": people,
-                "file": file,
                 "length": length}
 
     def search_by_keyword(self, search_keyword):
@@ -304,25 +306,19 @@ class Diary:
 
         return self.sort_dict_by_value(people, True)
 
-    def get_mp3_file_length(self, file):
-        """Accepts a file path and returns the length of the linked file if it is an mp3,
-        but None if it is any other file type."""
-        if not isinstance(file, str):
-            return None
+    def get_mp3_file_length(self):
+        """Prompts user to select an mp3 file and returns the length of
+        the linked file if it is an mp3, but None if it is any other file type."""
+        main_folder = os.getcwd()
+        os.chdir(main_folder + "\\new-file-upload")
+        selection = self.list_selection(os.listdir(), "Which file?")
 
-        if self.get_file_type(str(file)) == ".mp3":
-            return None
-
-        metadata = eyed3.load(file)
-        length = metadata.info.time_secs
+        audio = MP3(main_folder + "\\" + selection)
+        length = audio.info.length
         minutes, seconds = divmod(length, 60)
         hours = math.floor(minutes) / 60
+        os.chdir(main_folder)
         return f"{math.floor(hours)}:{math.floor(minutes)}:{math.floor(seconds)}"
-
-    def get_file_type(self, file):
-        """Removes the file extension from a path and returns it as a string."""
-        print(file[-4])
-        return file[-4]
 
     def get_summary_from_user(self, date, weekday):
         """Prompts the user through a detailed summary for a given date."""
@@ -381,10 +377,6 @@ class Diary:
 
     def add_first_entry(self):
         self.new_entry(self.get_current_date(), self.get_current_weekday())
-
-
-
-
 
     def upload_file(self, date, weekday):
         """Prompts the user to select a file and automatically moves that file
