@@ -33,17 +33,16 @@ class Diary:
             elif selection == "Search":
                 keyword = str(input("Enter a search term: "))
                 results = self.search_by_keyword(keyword)
-                self.display_search_results(results)
+                self.create_search_csv(keyword, results)
             else:
                 done = True
                 self.save_to_json()
-                self.update_spreadsheet(self.get_last_entry())
+                # self.update_spreadsheet(self.get_last_entry())
                 print("Goodbye!")
 
     def update_diary(self):
         """Records new diary entry(s)."""
-        last_entry = self.get_last_entry()              # Handles first-ever entry
-        if last_entry is None:
+        if not self._entries:                           # Handles first-ever entry
             self.add_first_entry()
             return
 
@@ -104,23 +103,33 @@ class Diary:
         for year in self._entries:
             for month in self._entries[year]:
                 for entry in self._entries[year][month]:
-                    if search_keyword in entry["summary"]:
-                        search_match.append(entry)
+                    try:
+                        if search_keyword.lower() in entry["summary"].lower():
+                            search_match.append(entry)
+                    except TypeError:
+                        continue
+                    except AttributeError:
+                        continue
+
         return search_match
 
-    def display_search_results(self, search_results):
-        """Accepts search results in a list and displays them neatly to the terminal."""
-        if not search_results:
-            return None
+    def create_search_csv(self, search_keyword, search_match):
+        """Creates a csv file based on search results."""
+        if not search_match:
+            return print("No results.")
 
-        count = 1
-        for result in search_results:
-            print(str(count) + ": " + + result["weekday"] + ", " + result["date"])
-            print("     summary: " + result["summary"])
-            print("     happiness: " + result["happiness"])
-            print("     file: " + result["file"])
-            print("     file length: "  + result["length"])
-            count += 1
+        with open(f"{search_keyword.lower()}_{datetime.date.today()}.csv", "w", newline="") as infile:
+            csv_writer = csv.writer(infile)
+
+            rows = [["Date", "Weekday", "Summary", "Happiness", "File length", "People"]]
+            for entry in search_match:
+                row = [entry["date"], entry["weekday"], entry["summary"],
+                       entry["happiness"], entry["length"]]
+                row += entry["people"]
+                rows.append(row)
+
+            csv_writer.writerows(rows)
+        return print("Search results successfully generated!")
 
     def save_to_json(self):
         """Records entry data to json."""
@@ -166,18 +175,19 @@ class Diary:
         """Returns the current year as a string."""
         return datetime.date.today().strftime("%Y")
 
-    def get_first_entry(self):
-        """Returns the first ever diary entry, or None if there are no entries."""
-        if not self._entries:
-            return None
-        return self._entries[0]
-
     def get_last_entry(self):
         """Returns the most recent diary entry, or None if there are
         no entries."""
         if not self._entries:
             return None
-        return self._entries[-1]
+
+        entries = []
+        for year in self._entries:
+            for month in self._entries[year]:
+                for entry in self._entries[year][month]:
+                    entries.append(entry)
+
+        return entries[-1]
 
     def get_total_entries(self):
         """Returns the total number of user-submitted entries."""
@@ -454,11 +464,10 @@ class Diary:
             year, month, day = self.split_date(date)
             weekday = datetime.date(year, month, day).strftime("%A")
             month = self.convert_num_to_month(month)
-            print(month)
 
             summary = None
             if row[1] != "" and row[1] is not None:
-                summary = row[1]
+                summary = row[1].strip()
 
             happiness = None
             if row[2] != "" and row[2] is not None:
@@ -490,8 +499,21 @@ class Diary:
                 "people": people,
                 "length": length
             })
+        self.save_to_json()
+
+    def remove_string_from_summary(self, string):
+        for year in self._entries:
+            for month in self._entries[year]:
+                for entry in self._entries[year][month]:
+                    if entry["summary"] is None or entry["summary"] == "":
+                        continue
+                    if string.lower() in entry["summary"].lower():
+                        new_summmary = entry["summary"].replace(string, "")
+                        entry["summary"] = new_summmary
 
 
 if __name__ == '__main__':
     test = Diary()
-    test.import_stats_from_csv("C:\\Users\\Colin\\Desktop\\2013.csv")
+    # test.remove_string_from_summary("Colin Joss:\n")
+
+    # test.import_stats_from_csv("C:\\Users\\Colin\\Desktop\\2020.csv")
