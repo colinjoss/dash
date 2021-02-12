@@ -44,7 +44,7 @@ class Diary:
         """Presents a main menu to the user in the terminal."""
         done = False
         while done is False:
-            selection = self.list_selection(["Update", "Search", "Close"])
+            selection = self.list_selection(["Update", "Search", "Edit", "Close"])
             if selection == "Update":
                 self.update_diary()
 
@@ -52,6 +52,13 @@ class Diary:
                 keyword = str(input("Enter a search term: "))
                 results = self.search_by_keyword(keyword)
                 self.create_search_csv(keyword, results)
+            elif selection == "Edit":
+                print("YYYY-mm-dd")
+                date = str(input("Enter the date of the entry you're editing: "))
+                result = self.search_by_date(date)
+                if result is None:
+                    return print("No results.")
+                self.edit_entry(result)
             else:
                 done = True
                 self.save_to_json()
@@ -151,6 +158,9 @@ class Diary:
 
             csv_writer.writerows(rows)
         return print("Search results successfully generated!\n")
+
+    def edit_entry(self, entry):
+        pass
 
     def save_to_json(self):
         """Records entry data to json."""
