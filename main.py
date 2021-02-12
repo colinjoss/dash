@@ -64,6 +64,7 @@ class Diary:
                 done = True
                 self.save_to_json()
                 self.update_yearly_csv(self.get_last_entry())
+                self.update_statistics_csv(self.get_last_entry())
                 print("Goodbye!")
 
     def update_diary(self):
@@ -198,6 +199,56 @@ class Diary:
             csv_writer.writerows(rows)
         return print("Yearly spreadsheet successfully updated.\n")
 
+    def update_statistics_csv(self, last_entry):
+        if last_entry is None:
+            return None
+
+        rows = [["GENERAL STATISTICS"],
+                ["Entries: ", self.get_total_entries()],
+                ["Files: ", self.get_total_files()],
+                ["Sum file length: ", self.get_total_length()],
+                ["Mean file length", ""],
+                [""]]
+
+        years = [year for year in self._entries]
+        rows.append(["YEARS RANKED"])
+        h_year = self.get_happiest_year()
+        for key in h_year:
+            rows.append([key, h_year[key]])
+        rows.append("")
+
+        for year in years:
+            h_month = self.get_happiest_month(year)
+            h_week = self.get_happiest_weekday(year)
+            rows.append([f"MONTHS RANKED {year}", "", f"WEEKDAYS RANKED {year}"])
+            this_year = []
+            for month in h_month:
+                this_year.append([month, h_month[month]])
+
+            index = 0
+            for weekday in h_week:
+                try:
+                    this_year[index] += [weekday, h_week[weekday]]
+                    index += 1
+                except IndexError:
+                    pass
+
+            for row in this_year:
+                rows.append(row)
+            rows.append([""])
+
+            # for key in h_month:
+            #     rows.append([key, h_month[key]])
+            # rows.append([f"Happiest weekdays of: {year}"])
+            # for key in h_week:
+            #     rows.append([key, h_week[key]])
+
+        with open(f"statistics.csv", "w", newline="") as infile:
+            csv_writer = csv.writer(infile)
+            csv_writer.writerows(rows)
+
+        return print("Statistics spreadsheet successfully updated.\n")
+
     def get_current_date(self):
         """Returns the current date."""
         return datetime.date.today()
@@ -246,6 +297,33 @@ class Diary:
                         count += 1
         return count
 
+    def get_total_length(self):
+        sum_in_seconds = 0
+        for year in self._entries:
+            for month in self._entries[year]:
+                for entry in self._entries[year][month]:
+                    if entry["length"] is None:
+                        continue
+                    hours, minutes, seconds = self.split_time(entry["length"])
+                    hours = self.times_sixty(self.times_sixty(hours))
+                    minutes = self.times_sixty(minutes)
+                    sum_in_seconds += (hours + minutes + seconds)
+
+        return self.convert_seconds_to_hms()
+
+    def convert_seconds_to_hms:
+        pass
+
+    def split_time(self, time):
+        """Accepts a string formatted as "H:M:S:" and returns the hours,
+        minutes, and seconds separately."""
+        time_list = str(time).split(":")
+        return int(time_list[0]), int(time_list[1]), int(time_list[2])
+
+    def times_sixty(self, num):
+        """Accepts a number and returns the product of it and 60."""
+        return num * 60
+
     def get_happiest_year(self):
         """Returns a sorted dictionary of the happiest years and their averages."""
         happiness = {}
@@ -253,9 +331,15 @@ class Diary:
             happiness[year] = [0, 0]
             for month in self._entries[year]:
                 for entry in self._entries[year][month]:
+                    if entry["happiness"] is None:
+                        continue
                     happiness[year][0] += entry["happiness"]
                     happiness[year][1] += 1
-            happiness[year] = happiness[year][0] / happiness[year][1]
+
+            if happiness[year][1] == 0:
+                happiness[year] = 0
+            else:
+                happiness[year] = happiness[year][0] / happiness[year][1]
 
         return self.sort_dict_by_value(happiness, True)
 
@@ -266,9 +350,16 @@ class Diary:
         for month in self._entries[year]:
             happiness[month] = [0, 0]
             for entry in self._entries[year][month]:
+                if entry["happiness"] is None:
+                    continue
                 happiness[month][0] += entry["happiness"]
                 happiness[month][1] += 1
-            happiness[month] = happiness[month][0] / happiness[month][1]
+
+            if happiness[month][1] == 0:
+                happiness[month] = 0
+            else:
+                happiness[month] = happiness[month][0] / happiness[month][1]
+
 
         return self.sort_dict_by_value(happiness, True)
 
@@ -279,12 +370,17 @@ class Diary:
                      "Wednesday": [0, 0], "Thursday": [0, 0], "Friday": [0, 0],
                      "Saturday": [0, 0]}
         for month in self._entries[year]:
-            for entry in self._entries[month]:
+            for entry in self._entries[year][month]:
+                if entry["happiness"] is None:
+                    continue
                 happiness[entry["weekday"]][0] += entry["happiness"]
-                happiness[entry["weekday"]][0] += 1
+                happiness[entry["weekday"]][1] += 1
 
         for weekday in happiness:
-            happiness[weekday] = happiness[weekday][0] / happiness[weekday][1]
+            if happiness[weekday][1] == 0:
+                happiness[weekday] = 0
+            else:
+                happiness[weekday] = happiness[weekday][0] / happiness[weekday][1]
 
         return self.sort_dict_by_value(happiness, True)
 
