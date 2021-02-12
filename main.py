@@ -248,6 +248,8 @@ class Diary:
 
         return print("Statistics spreadsheet successfully updated.\n")
 
+    # Getters and helpers --------------------------------------
+
     def get_current_date(self):
         """Returns the current date."""
         return datetime.date.today()
@@ -324,6 +326,11 @@ class Diary:
         time_list = str(time).split(":")
         return int(time_list[0]), int(time_list[1]), int(time_list[2])
 
+    def split_date(self, date):
+        """Splits a hyphenated date into its year/month/day parts, and returns each as an int."""
+        date_list = str(date).split("-")
+        return int(date_list[0]), int(date_list[1]), int(date_list[2])
+
     def times_sixty(self, num):
         """Accepts a number and returns the product of it and 60."""
         return num * 60
@@ -387,28 +394,6 @@ class Diary:
                 happiness[weekday] = happiness[weekday][0] / happiness[weekday][1]
 
         return self.sort_dict_by_value(happiness, True)
-
-    def get_entries_by_happiness(self, level, year=None, month=None):
-        """Returns a list of entries by a given happiness level, limited by
-        year or month, depending on what the user inputs."""
-        days = []
-        if year is None:  # If the user did not input a year, the function
-            for year in self._entries:  # returns all matching entries available
-                for month in self._entries[year]:
-                    for entry in self._entries[year][month]:
-                        if entry["happiness"] == level:
-                            days.append(entry)
-
-        elif month is None:  # If the user inputted a year but not a month, the
-            for month in self._entries[year]:  # function returns all matching entries in that year
-                for entry in self._entries[year][month]:
-                    if entry["happiness"] == level:
-                        days.append(entry)
-
-        else:
-            for entry in self._entries[year][month]:  # If the user inputted both a month and a year, the
-                if entry["happiness"] == level:  # function returns all matching entries in that month
-                    days.append(entry)
 
     def get_most_mentioned_people(self, year=None, month=None):
         """Returns a sorted dictionary of mentioned people and
@@ -516,15 +501,7 @@ class Diary:
     def add_first_entry(self):
         self.new_entry(self.get_current_date(), self.get_current_weekday())
 
-    def split_date(self, date):
-        """Splits a hyphenated date into its year/month/day parts, and returns each as an int."""
-        date_list = str(date).split("-")
-        return int(date_list[0]), int(date_list[1]), int(date_list[2])
 
-    def move_file(self, file, dest):
-        """Accepts a file and a destination and moves that file to the destination."""
-        shutil.copy(file, dest)
-        os.remove(file)
 
     def list_selection(self, choices, message=""):
         """Receives a list of choices and an optional message, and users the inquirer
