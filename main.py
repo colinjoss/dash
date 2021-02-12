@@ -10,23 +10,41 @@ import inquirer
 from mutagen.mp3 import MP3
 import math
 import csv
-# import operator
-# import calendar
+from pyfiglet import Figlet
+import calendar
 
+print("")
 
 class Diary:
     def __init__(self):
         with open("save_data.json", "r") as infile:
             data = json.load(infile)
             self._entries = data[0]
+            self.title()
+            self.calendar()
             self.main_menu()
+
+    def title(self):
+        """Displays the title of the prgoram."""
+        custom_fig = Figlet(font='slant')
+        print(custom_fig.renderText('AUTO - DIARY'))
+        print("Program by Colin Joss")
+        print("-----------------------------------------\n")
+
+    def calendar(self):
+        """Displays the current calendar."""
+        date = datetime.date.today().strftime("%B %d %Y")
+        weekday = datetime.date.today().strftime("%A")
+        print(f"Today is {weekday} {date}\n")
+        year = datetime.date.today().year
+        month = datetime.date.today().month
+        print(calendar.month(year, month))
 
     def main_menu(self):
         """Presents a main menu to the user in the terminal."""
         done = False
         while done is False:
-            selection = self.list_selection(["Update", "Search", "Close"],
-                                            "Welcome to you Diary Assistant!")
+            selection = self.list_selection(["Update", "Search", "Close"])
             if selection == "Update":
                 self.update_diary()
 
@@ -67,16 +85,16 @@ class Diary:
         match = False
         catch_up_days = []
         less = 1
-        print(last_date)
         while match is False:
             one_less_day = datetime.date.today() - datetime.timedelta(days=less)
             if str(one_less_day) == last_date:
-                print("heeya")
                 match = True
             else:
                 catch_up_days.append(one_less_day)
             less += 1
 
+        catch_up_days.reverse()
+        print("You need to catch up on some days! Update these first. \n")
         for day in catch_up_days:
             date = day
             year, month, day = self.split_date(date)
@@ -118,7 +136,7 @@ class Diary:
     def create_search_csv(self, search_keyword, search_match):
         """Creates a csv file based on search results."""
         if not search_match:
-            return print("No results.")
+            return print("No results.\n")
 
         with open(f"{search_keyword.lower()}_{datetime.date.today()}.csv", "w", newline="") as infile:
             csv_writer = csv.writer(infile)
@@ -310,8 +328,10 @@ class Diary:
         """Prompts user to select an mp3 file and returns the length of
         the linked file if it is an mp3, but None if it is any other file type."""
         main_folder = os.getcwd()
-        os.chdir(main_folder + "\\new-file-upload")
-        selection = self.list_selection(os.listdir(), "Which file?")
+        os.chdir(main_folder + "\\new-update-files")
+        selection = self.list_selection(["No file"] + os.listdir(), "Which file?")
+        if selection == "No file":
+            return None
 
         audio = MP3(main_folder + "\\" + selection)
         length = audio.info.length
@@ -324,7 +344,7 @@ class Diary:
         """Prompts the user through a detailed summary for a given date."""
         print(f"This is the summary for {weekday}, {date}.")
         print("Remember to be as detailed as possible - and to use as many "
-              "KEYWORDS as you can!")
+              "KEYWORDS as you can! \n")
         morning = str(input("This morning, I... "))
         afternoon = str(input("In the afternoon, I... "))
         evening = str(input("During the evening, I... "))
@@ -370,10 +390,10 @@ class Diary:
 
     def sort_dict_by_value(self, dict, order):
         """Accepts a dictionary and returns the dictionary sorted by value."""
-        return {k: v for k, v in sorted(  # Returns a new dictionary
-            dict.items(),  # Selecting from the dictionary "happiness" as a list of tuples
-            key=lambda pair: pair[1],  # Sorting according to the second item in the tuple, AKA the value
-            reverse=bool(order))}  # Reversing because by default it sorts in ascending order
+        return {k: v for k, v in sorted(        # Returns a new dictionary
+            dict.items(),                       # Selecting from the dictionary "happiness" as a list of tuples
+            key=lambda pair: pair[1],           # Sorting according to the second item in the tuple, AKA the value
+            reverse=bool(order))}               # Reversing because by default it sorts in ascending order
 
     def add_first_entry(self):
         self.new_entry(self.get_current_date(), self.get_current_weekday())
@@ -444,6 +464,8 @@ class Diary:
         if 1 <= num <= 12:
             return month_list[int(num)-1]
         return None
+
+    # Extra functions ---------------------------------
 
     def import_stats_from_csv(self, filepath):
         """Takes a csv file, and if the file is formatted properly,
