@@ -302,17 +302,21 @@ class Diary:
         for year in self._entries:
             for month in self._entries[year]:
                 for entry in self._entries[year][month]:
-                    if entry["length"] is None:
+                    if entry["length"] is None or entry["length"] == " ":
                         continue
                     hours, minutes, seconds = self.split_time(entry["length"])
                     hours = self.times_sixty(self.times_sixty(hours))
                     minutes = self.times_sixty(minutes)
                     sum_in_seconds += (hours + minutes + seconds)
 
-        return self.convert_seconds_to_hms()
+        return self.convert_seconds_to_hms(sum_in_seconds)
 
-    def convert_seconds_to_hms:
-        pass
+    def convert_seconds_to_hms(self, seconds):
+        """Accepts a number of seconds and returns a string of the time,
+        with hours and minutes, divided by colons."""
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        return f"{math.floor(hours)}:{math.floor(minutes)}:{math.floor(seconds)}"
 
     def split_time(self, time):
         """Accepts a string formatted as "H:M:S:" and returns the hours,
@@ -450,10 +454,9 @@ class Diary:
 
         audio = MP3(main_folder + "\\" + selection)
         length = audio.info.length
-        minutes, seconds = divmod(length, 60)
-        hours = math.floor(minutes) / 60
+        hms_string = self.convert_seconds_to_hms(length)
         os.chdir(main_folder)
-        return f"{math.floor(hours)}:{math.floor(minutes)}:{math.floor(seconds)}"
+        return hms_string
 
     def get_summary_from_user(self, date, weekday):
         """Prompts the user through a detailed summary for a given date."""
