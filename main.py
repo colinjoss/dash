@@ -55,7 +55,7 @@ class Diary:
             else:
                 done = True
                 self.save_to_json()
-                # self.update_spreadsheet(self.get_last_entry())
+                self.update_csv(self.get_last_entry())
                 print("Goodbye!")
 
     def update_diary(self):
@@ -65,7 +65,8 @@ class Diary:
             return
 
         last_date = self.get_last_entry()["date"]       # If the date of the last entry is not today, calls
-        if last_date != self.get_current_date():        # catch_up to update the missing entries first
+        yesterday = self.get_current_date() - datetime.timedelta(days=1)
+        if last_date != str(yesterday):                 # catch_up to update the missing entries first
             self.catch_up(last_date)
 
         year = self.get_current_year()                  # Creates a new year if new year
@@ -149,7 +150,7 @@ class Diary:
                 rows.append(row)
 
             csv_writer.writerows(rows)
-        return print("Search results successfully generated!")
+        return print("Search results successfully generated!\n")
 
     def save_to_json(self):
         """Records entry data to json."""
@@ -157,27 +158,27 @@ class Diary:
             all_data = [self._entries]
             json.dump(all_data, outfile)
 
-    def update_spreadsheet(self, last_entry):
+    def update_csv(self, last_entry):
         """Creates a spreadsheet and saves the most updated year data to it."""
         year = self.get_current_year()
         if last_entry is None:
             return None
-        # if str(year) not in last_entry["date"]:
-        #     return None
+        if str(year) not in last_entry["date"]:
+            return None
 
-        file_count = ""
-        file_length = ""
-        if last_entry["file"] is not None:
-            file_count = self.get_total_files()
-            file_length = last_entry["length"]
+        with open(f"{year}.csv", "w", newline="") as infile:
+            csv_writer = csv.writer(infile)
 
-        new_row = [last_entry["date"], last_entry["weekday"], last_entry["summary"],
-                   last_entry["happiness"], file_count, file_length]
-        new_row += last_entry["people"]
+            rows = [["Date", "Weekday", "Summary", "Happiness", "File length", "People"]]
+            for month in self._entries[str(year)]:
+                for entry in self._entries[str(year)][month]:
+                    row = [entry["date"], entry["weekday"], entry["summary"],
+                           entry["happiness"], entry["length"]]
+                    row += entry["people"]
+                    rows.append(row)
 
-        with open(f"{year}.csv", "a", newline="") as outfile:
-            csv_file = csv.writer(outfile)
-            csv_file.writerow(new_row)
+            csv_writer.writerows(rows)
+        return print("Yearly spreadsheet successfully updated.\n")
 
     def get_current_date(self):
         """Returns the current date."""
@@ -223,7 +224,7 @@ class Diary:
         for year in self._entries:
             for month in self._entries[year]:
                 for entry in self._entries[year][month]:
-                    if entry["file"] is not None:
+                    if entry["length"] is not None:
                         count += 1
         return count
 
@@ -527,7 +528,4 @@ class Diary:
 
 
 if __name__ == '__main__':
-    test = Diary()
-    # test.remove_string_from_summary("Colin Joss:\n")
-
-    # test.import_stats_from_csv("C:\\Users\\Colin\\Desktop\\2020.csv")
+    diary = Diary()
