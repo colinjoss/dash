@@ -13,8 +13,6 @@ import csv
 from pyfiglet import Figlet
 import calendar
 
-print("")
-
 
 class Diary:
     def __init__(self):
@@ -200,6 +198,8 @@ class Diary:
         return print("Yearly spreadsheet successfully updated.\n")
 
     def update_statistics_csv(self, last_entry):
+        """Automatically calculates a set of statistics from my diary and
+        organizes it in a csv."""
         if last_entry is None:
             return None
 
@@ -207,7 +207,6 @@ class Diary:
                 ["Entries: ", self.get_total_entries()],
                 ["Files: ", self.get_total_files()],
                 ["Sum file length: ", self.get_total_length()],
-                ["Mean file length", ""],
                 [""]]
 
         years = [year for year in self._entries]
@@ -298,6 +297,7 @@ class Diary:
         return count
 
     def get_total_length(self):
+        """Calculates the sum total amount of recording time."""
         sum_in_seconds = 0
         for year in self._entries:
             for month in self._entries[year]:
@@ -515,34 +515,6 @@ class Diary:
 
     def add_first_entry(self):
         self.new_entry(self.get_current_date(), self.get_current_weekday())
-
-    def upload_file(self, date, weekday):
-        """Prompts the user to select a file and automatically moves that file
-        to my diary folder of the correct year."""
-        confirm = self.list_selection(["Yes", "No"],  # Asks the user if they want to upload a file
-                                      f"Would you like to upload a file for {weekday}, {date}?")
-        if confirm == "No":
-            return
-
-        os.chdir(os.getcwd() + "\\new-update-files")  # Changes directory to new-update-files
-        # print("The current directory is: " + os.getcwd())
-        files = []
-        files += os.listdir()  # Saves all files in this directory
-        if not files:
-            return print("There are no files to upload.")
-        files.append("Cancel")
-
-        selection = self.list_selection(files, "Which file?")  # Asks user to select file
-        if selection == "Cancel":
-            return None
-
-        root = f'{os.getcwd()}\\'
-        year, month, day = self.split_date(date)
-        dest = f'C:\\Users\\Colin\\Desktop\\Master Folder\\Projects\\Diary\\{datetime.date(year, month, day).year}'
-        self.move_file(root + selection, dest)  # Moves target file to appropriate diary folder
-        os.chdir("..")
-        # print(f"This is what's being saved: {dest}\\{selection}")
-        return f"{dest}\\{selection}"
 
     def split_date(self, date):
         """Splits a hyphenated date into its year/month/day parts, and returns each as an int."""
