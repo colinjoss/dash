@@ -219,7 +219,8 @@ class Diary:
         for year in years:
             h_month = self.get_happiest_month(year)
             h_week = self.get_happiest_weekday(year)
-            rows.append([f"MONTHS RANKED {year}", "", f"WEEKDAYS RANKED {year}"])
+            m_people = self.get_most_mentioned_people(year)
+            rows.append([f"MONTHS RANKED {year}", "", f"WEEKDAYS RANKED {year}", "", f"MOST MENTIONED {year}"])
             this_year = []
             for month in h_month:
                 this_year.append([month, h_month[month]])
@@ -232,15 +233,17 @@ class Diary:
                 except IndexError:
                     pass
 
+            index = 0
+            for person in m_people:
+                try:
+                    this_year[index] += [person, m_people[person]]
+                    index += 1
+                except IndexError:
+                    pass
+
             for row in this_year:
                 rows.append(row)
             rows.append([""])
-
-            # for key in h_month:
-            #     rows.append([key, h_month[key]])
-            # rows.append([f"Happiest weekdays of: {year}"])
-            # for key in h_week:
-            #     rows.append([key, h_week[key]])
 
         with open(f"statistics.csv", "w", newline="") as infile:
             csv_writer = csv.writer(infile)
@@ -395,30 +398,11 @@ class Diary:
 
         return self.sort_dict_by_value(happiness, True)
 
-    def get_most_mentioned_people(self, year=None, month=None):
+    def get_most_mentioned_people(self, year):
         """Returns a sorted dictionary of mentioned people and
         their averages."""
         people = {}
-        if year is None:
-            for year in self._entries:
-                for month in self._entries[year]:
-                    for entry in self._entries[year][month]:
-                        for person in entry["people"]:
-                            if person.title() not in people:
-                                people[person.title()] = 1
-                            else:
-                                people[person.title()] += 1
-
-        elif month is None:
-            for month in self._entries[year]:
-                for entry in self._entries[year][month]:
-                    for person in entry["people"]:
-                        if person not in people:
-                            people[person.title()] = 1
-                        else:
-                            people[person.title()] += 1
-
-        else:
+        for month in self._entries[year]:
             for entry in self._entries[year][month]:
                 for person in entry["people"]:
                     if person not in people:
@@ -500,8 +484,6 @@ class Diary:
 
     def add_first_entry(self):
         self.new_entry(self.get_current_date(), self.get_current_weekday())
-
-
 
     def list_selection(self, choices, message=""):
         """Receives a list of choices and an optional message, and users the inquirer
@@ -591,6 +573,9 @@ class Diary:
                     if string.lower() in entry["summary"].lower():
                         new_summmary = entry["summary"].replace(string, "")
                         entry["summary"] = new_summmary
+
+    def find_and_replace(self):
+        """Finds a string and replaces it with a new string."""
 
 
 if __name__ == '__main__':
