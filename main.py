@@ -15,6 +15,7 @@ import calendar
 
 print("")
 
+
 class Diary:
     def __init__(self):
         with open("save_data.json", "r") as infile:
@@ -58,34 +59,34 @@ class Diary:
                 result = self.search_by_date(date)
                 if result is None:
                     return print("No results.")
-                self.edit_entry(result)
+                self.edit_entry(result[0])
             else:
                 done = True
                 self.save_to_json()
-                self.update_csv(self.get_last_entry())
+                self.update_yearly_csv(self.get_last_entry())
                 print("Goodbye!")
 
     def update_diary(self):
         """Records new diary entry(s)."""
-        if not self._entries:                           # Handles first-ever entry
+        if not self._entries:  # Handles first-ever entry
             self.add_first_entry()
             return
 
-        last_date = self.get_last_entry()["date"]       # If the date of the last entry is not today, calls
+        last_date = self.get_last_entry()["date"]  # If the date of the last entry is not today, calls
         yesterday = self.get_current_date() - datetime.timedelta(days=1)
-        if last_date != str(yesterday):                 # catch_up to update the missing entries first
+        if last_date != str(yesterday):  # catch_up to update the missing entries first
             self.catch_up(last_date)
 
-        year = self.get_current_year()                  # Creates a new year if new year
+        year = self.get_current_year()  # Creates a new year if new year
         if year not in self._entries:
             self._entries[year] = {}
 
-        month = self.get_current_month()                # Creates a new month if new month
+        month = self.get_current_month()  # Creates a new month if new month
         if month not in self._entries[year]:
             self._entries[year][month] = []
 
         entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
-        self._entries[year][month].append(entry)        # Prompts user through entry, saves as dictionary
+        self._entries[year][month].append(entry)  # Prompts user through entry, saves as dictionary
 
     def catch_up(self, last_date):
         """If update_diary determines the current date and the last date the diary was updated
@@ -160,7 +161,14 @@ class Diary:
         return print("Search results successfully generated!\n")
 
     def edit_entry(self, entry):
-        pass
+        """Take an entry and prompts the user through editing parts or all of it."""
+        selection = self.list_selection(["date", "weekday", "summary", "happiness", "people", "length"],
+                                        "Which part do you want to edit")
+        for key in entry:
+            if str(key) == selection:
+                print(entry[key])
+                edit = str(input("Your edit: "))
+                entry[key] = edit
 
     def save_to_json(self):
         """Records entry data to json."""
@@ -168,7 +176,7 @@ class Diary:
             all_data = [self._entries]
             json.dump(all_data, outfile)
 
-    def update_csv(self, last_entry):
+    def update_yearly_csv(self, last_entry):
         """Creates a spreadsheet and saves the most updated year data to it."""
         year = self.get_current_year()
         if last_entry is None:
@@ -401,10 +409,10 @@ class Diary:
 
     def sort_dict_by_value(self, dict, order):
         """Accepts a dictionary and returns the dictionary sorted by value."""
-        return {k: v for k, v in sorted(        # Returns a new dictionary
-            dict.items(),                       # Selecting from the dictionary "happiness" as a list of tuples
-            key=lambda pair: pair[1],           # Sorting according to the second item in the tuple, AKA the value
-            reverse=bool(order))}               # Reversing because by default it sorts in ascending order
+        return {k: v for k, v in sorted(  # Returns a new dictionary
+            dict.items(),  # Selecting from the dictionary "happiness" as a list of tuples
+            key=lambda pair: pair[1],  # Sorting according to the second item in the tuple, AKA the value
+            reverse=bool(order))}  # Reversing because by default it sorts in ascending order
 
     def add_first_entry(self):
         self.new_entry(self.get_current_date(), self.get_current_weekday())
@@ -412,27 +420,27 @@ class Diary:
     def upload_file(self, date, weekday):
         """Prompts the user to select a file and automatically moves that file
         to my diary folder of the correct year."""
-        confirm = self.list_selection(["Yes", "No"],            # Asks the user if they want to upload a file
+        confirm = self.list_selection(["Yes", "No"],  # Asks the user if they want to upload a file
                                       f"Would you like to upload a file for {weekday}, {date}?")
         if confirm == "No":
             return
 
-        os.chdir(os.getcwd() + "\\new-update-files")            # Changes directory to new-update-files
+        os.chdir(os.getcwd() + "\\new-update-files")  # Changes directory to new-update-files
         # print("The current directory is: " + os.getcwd())
         files = []
-        files += os.listdir()                                   # Saves all files in this directory
+        files += os.listdir()  # Saves all files in this directory
         if not files:
             return print("There are no files to upload.")
         files.append("Cancel")
 
-        selection = self.list_selection(files, "Which file?")   # Asks user to select file
+        selection = self.list_selection(files, "Which file?")  # Asks user to select file
         if selection == "Cancel":
             return None
 
         root = f'{os.getcwd()}\\'
         year, month, day = self.split_date(date)
         dest = f'C:\\Users\\Colin\\Desktop\\Master Folder\\Projects\\Diary\\{datetime.date(year, month, day).year}'
-        self.move_file(root + selection, dest)                  # Moves target file to appropriate diary folder
+        self.move_file(root + selection, dest)  # Moves target file to appropriate diary folder
         os.chdir("..")
         # print(f"This is what's being saved: {dest}\\{selection}")
         return f"{dest}\\{selection}"
@@ -473,7 +481,7 @@ class Diary:
         month_list = ["January", "February", "March", "April", "May", "June",
                       "July", "August", "September", "October", "November", "December"]
         if 1 <= num <= 12:
-            return month_list[int(num)-1]
+            return month_list[int(num) - 1]
         return None
 
     # Extra functions ---------------------------------
@@ -481,10 +489,10 @@ class Diary:
     def import_stats_from_csv(self, filepath):
         """Takes a csv file, and if the file is formatted properly,
         pulls requisite data to create diary entries."""
-        file = csv.reader(open(filepath))                   # Opens the given file
+        file = csv.reader(open(filepath))  # Opens the given file
         rows = list(file)
 
-        for row in rows:                                    # Cycles through the rows, pulling data
+        for row in rows:  # Cycles through the rows, pulling data
             date = row[0]
             year, month, day = self.split_date(date)
             weekday = datetime.date(year, month, day).strftime("%A")
@@ -503,7 +511,7 @@ class Diary:
                 length = row[3]
 
             people = []
-            try:                                            # Gathers list of relevant people, or handles if none
+            try:  # Gathers list of relevant people, or handles if none
                 i = 4
                 while row[i]:
                     people.append(str(row[i]))
@@ -511,12 +519,12 @@ class Diary:
             except IndexError:
                 pass
 
-            if str(year) not in self._entries:              # Creates correct dicts / lists if new year / month
+            if str(year) not in self._entries:  # Creates correct dicts / lists if new year / month
                 self._entries[str(year)] = {}
             if str(month) not in self._entries[str(year)]:
                 self._entries[str(year)][str(month)] = []
 
-            self._entries[str(year)][str(month)].append({   # Creates a new diary entry
+            self._entries[str(year)][str(month)].append({  # Creates a new diary entry
                 "date": date,
                 "weekday": weekday,
                 "summary": summary,
