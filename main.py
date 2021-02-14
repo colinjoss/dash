@@ -75,6 +75,10 @@ class Diary:
         yesterday = self.get_current_date() - datetime.timedelta(days=1)
         if last_date != str(yesterday):  # catch_up to update the missing entries first
             self.catch_up(last_date)
+            selection = self.list_selection(["Yes", "No"],
+                                            "It's time to update for today. Would you like to skip for now?")
+            if selection == "Yes":
+                return
 
         year = self.get_current_year()  # Creates a new year if new year
         if year not in self._entries:
@@ -104,10 +108,22 @@ class Diary:
         catch_up_days.reverse()
         print("You need to catch up on some days! Update these first. \n")
         for day in catch_up_days:
-            date = day
+            date = str(day)
             year, month, day = self.split_date(date)
             weekday = datetime.date(year, month, day).strftime("%A")
-            self.new_entry(date, weekday)
+            entry = self.new_entry(date, weekday)
+
+            year = self.get_current_year()  # Creates a new year if new year
+            if year not in self._entries:
+                self._entries[year] = {}
+
+            month = self.get_current_month()  # Creates a new month if new month
+            if month not in self._entries[year]:
+                self._entries[year][month] = []
+
+            print(entry)
+            self._entries[year][month].append(entry)
+
 
     def new_entry(self, date, weekday):
         """Prompts the user through the components of a diary entry, and
@@ -116,7 +132,7 @@ class Diary:
         weekday = weekday
         summary = self.get_summary_from_user(date, weekday)
         happiness = self.get_happiness_from_user()
-        people = self.get_people_from_user(),
+        people = self.get_people_from_user()
         length = self.get_mp3_file_length()
         return {"date": date,
                 "weekday": weekday,
@@ -236,6 +252,8 @@ class Diary:
             index = 0
             for person in m_people:
                 try:
+                    if index > 6:
+                        continue
                     this_year[index] += [person, m_people[person]]
                     index += 1
                 except IndexError:
@@ -419,6 +437,7 @@ class Diary:
         os.chdir(main_folder + "\\new-update-files")
         selection = self.list_selection(["No file"] + os.listdir(), "Which file?")
         if selection == "No file":
+            os.chdir(main_folder)
             return None
 
         audio = MP3(main_folder + "\\" + selection)
@@ -437,8 +456,8 @@ class Diary:
         evening = str(input("During the evening, I... "))
         opinion = str(input("Overall, I'd say today was... "))
 
-        summary = f"This morning, I {morning}\nIn the afternoon, I {afternoon}\n" \
-                  f"During the evening, I {evening}\nOverall, I'd say today was {opinion}"
+        summary = f"This morning, I {morning} In the afternoon, I {afternoon} " \
+                  f"During the evening, I {evening} Overall, I'd say today was {opinion}"
         return summary
 
     def get_happiness_from_user(self):
@@ -451,15 +470,16 @@ class Diary:
         """Prompts users to input the names of people until they exit."""
         done = False
         count = 1
-        people = set()
+        people = []
         print("Please input all the names of people - first and last - who are noteworthy to this day.")
         while done is False:
             person = str(input(f"{count}: "))
-            people.add(person.lower())
+            people.append(person)
             count += 1
             selection = self.list_selection(["Yes", "No"], "Add another name?")
             if selection == "No":
                 done = True
+        return people
 
     def get_year_from_user(self):
         """Prompts the user to input a valid year (contained within self._entries).
@@ -574,9 +594,18 @@ class Diary:
                         new_summmary = entry["summary"].replace(string, "")
                         entry["summary"] = new_summmary
 
-    def find_and_replace(self):
+    def find_and_replace(self, find, replace):
         """Finds a string and replaces it with a new string."""
+        for year in self._entries:
+            for month in self._entries[year]:
+                for entry in self._entries[year][month]:
+                    if entry["people"] is None:
+                        continue
+                    for name in entry["people"]:
+                        name.replace(find, replace)
+        self.save_to_json()
 
 
 if __name__ == '__main__':
     diary = Diary()
+    # diary.find_and_replace("Cameron Eldrige", "Cameron Eldridge")
