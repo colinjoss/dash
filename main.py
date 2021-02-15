@@ -22,7 +22,6 @@ class Diary:
             self.calendar()
             self.main_menu()
 
-    @staticmethod
     def title(self):
         """Displays the title of the prgoram."""
         custom_fig = Figlet(font='slant')
@@ -30,7 +29,6 @@ class Diary:
         print("Program by Colin Joss")
         print("-----------------------------------------\n")
 
-    @staticmethod
     def calendar(self):
         """Displays the current calendar."""
         date = datetime.date.today().strftime("%B %d %Y")
@@ -143,32 +141,28 @@ class Diary:
                 "people": people,
                 "length": length}
 
-    def search_by_keyword(self, search_keyword):
+    def search_by_keyword(self, keyword):
         """Accepts a search keyword and returns a list of matches."""
-        search_match = []
+        matches = []
         for year in self._entries:
             for month in self._entries[year]:
                 for entry in self._entries[year][month]:
-                    try:
-                        if search_keyword.lower() in entry["summary"].lower():
-                            search_match.append(entry)
-                    except TypeError:
+                    if entry["summary"] is None or isinstance(entry["summary"], str) is False:
                         continue
-                    except AttributeError:
-                        continue
+                    elif keyword.lower() in entry["summary"].lower():
+                        matches.append(entry)
+        return matches
 
-        return search_match
-
-    def create_search_csv(self, search_keyword, search_match):
+    def create_search_csv(self, keyword, matches):
         """Creates a csv file based on search results."""
-        if not search_match:
+        if not matches:
             return print("No results.\n")
 
-        with open(f"{search_keyword.lower()}_{datetime.date.today()}.csv", "w", newline="") as infile:
+        with open(f"{keyword.lower()}_{datetime.date.today()}.csv", "w", newline="") as infile:
             csv_writer = csv.writer(infile)
 
             rows = [["Date", "Weekday", "Summary", "Happiness", "File length", "People"]]
-            for entry in search_match:
+            for entry in matches:
                 row = [entry["date"], entry["weekday"], entry["summary"],
                        entry["happiness"], entry["length"]]
                 row += entry["people"]
@@ -336,6 +330,22 @@ class Diary:
 
         return self.convert_seconds_to_hms(sum_in_seconds)
 
+    def get_mp3_file_length(self):
+        """Prompts user to select an mp3 file and returns the length of
+        the linked file if it is an mp3, but None if it is any other file type."""
+        main_folder = os.getcwd()
+        os.chdir(main_folder + "\\new-update-files")
+        selection = self.list_selection(["No file"] + os.listdir(), "Which file?")
+        if selection == "No file":
+            os.chdir(main_folder)
+            return None
+
+        audio = MP3(main_folder + "\\" + selection)
+        length = audio.info.length
+        hms_string = self.convert_seconds_to_hms(length)
+        os.chdir(main_folder)
+        return hms_string
+
     def convert_seconds_to_hms(self, seconds):
         """Accepts a number of seconds and returns a string of the time,
         with hours and minutes, divided by colons."""
@@ -431,22 +441,6 @@ class Diary:
 
         return self.sort_dict_by_value(people, True)
 
-    def get_mp3_file_length(self):
-        """Prompts user to select an mp3 file and returns the length of
-        the linked file if it is an mp3, but None if it is any other file type."""
-        main_folder = os.getcwd()
-        os.chdir(main_folder + "\\new-update-files")
-        selection = self.list_selection(["No file"] + os.listdir(), "Which file?")
-        if selection == "No file":
-            os.chdir(main_folder)
-            return None
-
-        audio = MP3(main_folder + "\\" + selection)
-        length = audio.info.length
-        hms_string = self.convert_seconds_to_hms(length)
-        os.chdir(main_folder)
-        return hms_string
-
     def get_summary_from_user(self, date, weekday):
         """Prompts the user through a detailed summary for a given date."""
         print(f"This is the summary for {weekday}, {date}.")
@@ -490,12 +484,6 @@ class Diary:
             return None
         return year
 
-    def get_month_from_user(self):
-        """Prompts the user to input a valid month as a number. Returns the
-        number converted to string equivalent or None."""
-        month = str(input("Please input a month as a number between 1 - 12: "))
-        return self.convert_num_to_month(month)
-
     def sort_dict_by_value(self, dict, order):
         """Accepts a dictionary and returns the dictionary sorted by value."""
         return {k: v for k, v in sorted(  # Returns a new dictionary
@@ -519,13 +507,13 @@ class Diary:
 
     def search_by_date(self, search_date):
         """Accepts a search date and returns a list of matches."""
-        search_match = []
+        matches = []
         for year in self._entries:
             for month in self._entries[year]:
                 for entry in self._entries[year][month]:
                     if search_date in entry["date"]:
-                        search_match.append(entry)
-        return search_match
+                        matches.append(entry)
+        return matches
 
     def convert_num_to_month(self, num):
         """Accepts a number between 1-12 and returns matching month, or None if no match."""
