@@ -1,7 +1,8 @@
 # Author: Colin Joss
-# Last date updated: 2-1-2021
+# Last date updated: 2-15-2021
 # Description: A simple python program for my personal diary system, made with the intention to
 #              speed up the process of maintaining it.
+
 import datetime
 import json
 import os
