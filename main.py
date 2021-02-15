@@ -5,7 +5,6 @@
 import datetime
 import json
 import os
-import shutil
 import inquirer
 from mutagen.mp3 import MP3
 import math
@@ -23,6 +22,7 @@ class Diary:
             self.calendar()
             self.main_menu()
 
+    @staticmethod
     def title(self):
         """Displays the title of the prgoram."""
         custom_fig = Figlet(font='slant')
@@ -30,6 +30,7 @@ class Diary:
         print("Program by Colin Joss")
         print("-----------------------------------------\n")
 
+    @staticmethod
     def calendar(self):
         """Displays the current calendar."""
         date = datetime.date.today().strftime("%B %d %Y")
@@ -44,21 +45,23 @@ class Diary:
         done = False
         while done is False:
             selection = self.list_selection(["Update", "Search", "Edit", "Close"])
-            if selection == "Update":
+            if selection == "Update":  # Prompts user through the diary updating process
                 self.update_diary()
 
-            elif selection == "Search":
+            elif selection == "Search":  # Prompts user to search and returns a csv with the results
                 keyword = str(input("Enter a search term: "))
                 results = self.search_by_keyword(keyword)
                 self.create_search_csv(keyword, results)
-            elif selection == "Edit":
-                print("YYYY-mm-dd")
+
+            elif selection == "Edit":  # Allows the user to edit a particular entry
+                print("YYYY-mm-dd")  # *** NOT FOR MASS DATA MANIPULATION ***
                 date = str(input("Enter the date of the entry you're editing: "))
                 result = self.search_by_date(date)
                 if result is None:
                     return print("No results.")
                 self.edit_entry(result[0])
-            else:
+
+            else:  # Exits, saves, and updates the yearly csv and stats csv
                 done = True
                 self.save_to_json()
                 self.update_yearly_csv(self.get_last_entry())
@@ -68,28 +71,33 @@ class Diary:
     def update_diary(self):
         """Records new diary entry(s)."""
         if not self._entries:  # Handles first-ever entry
-            self.add_first_entry()
-            return
+            return self.add_first_entry()
 
-        last_date = self.get_last_entry()["date"]  # If the date of the last entry is not today, calls
+        last_entry = self.get_last_entry()["date"]  # If the date of the last entry is not today, calls
         yesterday = self.get_current_date() - datetime.timedelta(days=1)
-        if last_date != str(yesterday):  # catch_up to update the missing entries first
-            self.catch_up(last_date)
-            selection = self.list_selection(["Yes", "No"],
-                                            "It's time to update for today. Would you like to skip for now?")
+        if last_entry != str(yesterday):  # catch_up to update the missing entries first
+            self.catch_up(last_entry)
+            selection = self.list_selection(["Yes", "No"], "Would you like to skip today?")
             if selection == "Yes":
                 return
 
-        year = self.get_current_year()  # Creates a new year if new year
-        if year not in self._entries:
-            self._entries[year] = {}
-
-        month = self.get_current_month()  # Creates a new month if new month
-        if month not in self._entries[year]:
-            self._entries[year][month] = []
+        year = self.get_current_year()  # Creates a new year and/month in self._entries data if it doesn't exist
+        month = self.get_current_month()
+        self.check_new_year(year)
+        self.check_new_month(year, month)
 
         entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
         self._entries[year][month].append(entry)  # Prompts user through entry, saves as dictionary
+
+    def check_new_year(self, year):
+        """Checks if the current year is contained in self._entries, and if not, creates a new year."""
+        if year not in self._entries:
+            self._entries[year] = {}
+
+    def check_new_month(self, year, month):
+        """Checks if the current month is contained in self._entries, and if not, creates a new month."""
+        if month not in self._entries[year]:
+            self._entries[year][month] = []
 
     def catch_up(self, last_date):
         """If update_diary determines the current date and the last date the diary was updated
@@ -97,7 +105,7 @@ class Diary:
         match = False
         catch_up_days = []
         less = 1
-        while match is False:
+        while match is False:   # Processes the missing entries between the last update and current day
             one_less_day = datetime.date.today() - datetime.timedelta(days=less)
             if str(one_less_day) == last_date:
                 match = True
@@ -107,23 +115,17 @@ class Diary:
 
         catch_up_days.reverse()
         print("You need to catch up on some days! Update these first. \n")
-        for day in catch_up_days:
+        for day in catch_up_days:   # Cycles through the missing entries, prompting user to update them
             date = str(day)
             year, month, day = self.split_date(date)
             weekday = datetime.date(year, month, day).strftime("%A")
             entry = self.new_entry(date, weekday)
 
-            year = self.get_current_year()  # Creates a new year if new year
-            if year not in self._entries:
-                self._entries[year] = {}
-
-            month = self.get_current_month()  # Creates a new month if new month
-            if month not in self._entries[year]:
-                self._entries[year][month] = []
-
-            print(entry)
+            year = self.get_current_year()
+            month = self.get_current_month()
+            self.check_new_year(year)
+            self.check_new_month(year, month)
             self._entries[year][month].append(entry)
-
 
     def new_entry(self, date, weekday):
         """Prompts the user through the components of a diary entry, and
@@ -391,7 +393,6 @@ class Diary:
                 happiness[month] = 0
             else:
                 happiness[month] = happiness[month][0] / happiness[month][1]
-
 
         return self.sort_dict_by_value(happiness, True)
 
