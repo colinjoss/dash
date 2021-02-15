@@ -23,7 +23,7 @@ class Diary:
             self.main_menu()
 
     def title(self):
-        """Displays the title of the prgoram."""
+        """Displays the title of the program."""
         custom_fig = Figlet(font='slant')
         print(custom_fig.renderText('AUTO - DIARY'))
         print("Program by Colin Joss")
@@ -86,16 +86,6 @@ class Diary:
 
         entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
         self._entries[year][month].append(entry)  # Prompts user through entry, saves as dictionary
-
-    def check_new_year(self, year):
-        """Checks if the current year is contained in self._entries, and if not, creates a new year."""
-        if year not in self._entries:
-            self._entries[year] = {}
-
-    def check_new_month(self, year, month):
-        """Checks if the current month is contained in self._entries, and if not, creates a new month."""
-        if month not in self._entries[year]:
-            self._entries[year][month] = []
 
     def catch_up(self, last_date):
         """If update_diary determines the current date and the last date the diary was updated
@@ -162,7 +152,7 @@ class Diary:
             csv_writer = csv.writer(infile)
 
             rows = [["Date", "Weekday", "Summary", "Happiness", "File length", "People"]]
-            for entry in matches:
+            for entry in matches:   # Formats all search match entries for display in a csv file
                 row = [entry["date"], entry["weekday"], entry["summary"],
                        entry["happiness"], entry["length"]]
                 row += entry["people"]
@@ -173,13 +163,17 @@ class Diary:
 
     def edit_entry(self, entry):
         """Take an entry and prompts the user through editing parts or all of it."""
-        selection = self.list_selection(["date", "weekday", "summary", "happiness", "people", "length"],
-                                        "Which part do you want to edit")
-        for key in entry:
-            if str(key) == selection:
-                print(entry[key])
-                edit = str(input("Your edit: "))
-                entry[key] = edit
+        selection = self.list_selection(["summary", "happiness", "people", "cancel"],
+                                        "Which part do you want to edit?")
+        print(entry[selection])
+        if selection == "summary":
+            entry[selection] = self.get_summary_from_user(entry["date", entry["weekday"]])
+        elif selection == "happiness":
+            entry[selection] = self.get_happiness_from_user()
+        elif selection == "people":
+            entry[selection] = self.get_people_from_user()
+        else:
+            return
 
     def save_to_json(self):
         """Records entry data to json."""
@@ -367,6 +361,16 @@ class Diary:
     def times_sixty(self, num):
         """Accepts a number and returns the product of it and 60."""
         return num * 60
+
+    def check_new_year(self, year):
+        """Checks if the current year is contained in self._entries, and if not, creates a new year."""
+        if year not in self._entries:
+            self._entries[year] = {}
+
+    def check_new_month(self, year, month):
+        """Checks if the current month is contained in self._entries, and if not, creates a new month."""
+        if month not in self._entries[year]:
+            self._entries[year][month] = []
 
     def get_happiest_year(self):
         """Returns a sorted dictionary of the happiest years and their averages."""
@@ -592,7 +596,6 @@ class Diary:
                         continue
                     for name in entry["people"]:
                         name.replace(find, replace)
-        self.save_to_json()
 
 
 if __name__ == '__main__':
