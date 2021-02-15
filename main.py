@@ -22,14 +22,16 @@ class Diary:
             self.calendar()
             self.main_menu()
 
-    def title(self):
+    @staticmethod
+    def title():
         """Displays the title of the program."""
         custom_fig = Figlet(font='slant')
         print(custom_fig.renderText('AUTO - DIARY'))
         print("Program by Colin Joss")
         print("-----------------------------------------\n")
 
-    def calendar(self):
+    @staticmethod
+    def calendar():
         """Displays the current calendar."""
         date = datetime.date.today().strftime("%B %d %Y")
         weekday = datetime.date.today().strftime("%A")
@@ -143,7 +145,8 @@ class Diary:
                         matches.append(entry)
         return matches
 
-    def create_search_csv(self, keyword, matches):
+    @staticmethod
+    def create_search_csv(keyword, matches):
         """Creates a csv file based on search results."""
         if not matches:
             return print("No results.\n")
@@ -167,7 +170,7 @@ class Diary:
                                         "Which part do you want to edit?")
         print(entry[selection])
         if selection == "summary":
-            entry[selection] = self.get_summary_from_user(entry["date", entry["weekday"]])
+            entry[selection] = self.get_summary_from_user(entry["date"], entry["weekday"])
         elif selection == "happiness":
             entry[selection] = self.get_happiness_from_user()
         elif selection == "people":
@@ -261,19 +264,23 @@ class Diary:
 
     # Getters and helpers --------------------------------------
 
-    def get_current_date(self):
+    @staticmethod
+    def get_current_date():
         """Returns the current date."""
         return datetime.date.today()
 
-    def get_current_weekday(self):
+    @staticmethod
+    def get_current_weekday():
         """Returns the current day of the week as a string."""
         return datetime.date.today().strftime("%A")
 
-    def get_current_month(self):
+    @staticmethod
+    def get_current_month():
         """Returns the current month of the year as a string."""
         return datetime.date.today().strftime("%B")
 
-    def get_current_year(self):
+    @staticmethod
+    def get_current_year():
         """Returns the current year as a string."""
         return datetime.date.today().strftime("%Y")
 
@@ -340,25 +347,29 @@ class Diary:
         os.chdir(main_folder)
         return hms_string
 
-    def convert_seconds_to_hms(self, seconds):
+    @staticmethod
+    def convert_seconds_to_hms(seconds):
         """Accepts a number of seconds and returns a string of the time,
         with hours and minutes, divided by colons."""
         minutes, seconds = divmod(seconds, 60)
         hours, minutes = divmod(minutes, 60)
         return f"{math.floor(hours)}:{math.floor(minutes)}:{math.floor(seconds)}"
 
-    def split_time(self, time):
+    @staticmethod
+    def split_time(time):
         """Accepts a string formatted as "H:M:S:" and returns the hours,
         minutes, and seconds separately."""
         time_list = str(time).split(":")
         return int(time_list[0]), int(time_list[1]), int(time_list[2])
 
-    def split_date(self, date):
+    @staticmethod
+    def split_date(date):
         """Splits a hyphenated date into its year/month/day parts, and returns each as an int."""
         date_list = str(date).split("-")
         return int(date_list[0]), int(date_list[1]), int(date_list[2])
 
-    def times_sixty(self, num):
+    @staticmethod
+    def times_sixty(num):
         """Accepts a number and returns the product of it and 60."""
         return num * 60
 
@@ -445,7 +456,8 @@ class Diary:
 
         return self.sort_dict_by_value(people, True)
 
-    def get_summary_from_user(self, date, weekday):
+    @staticmethod
+    def get_summary_from_user(date, weekday):
         """Prompts the user through a detailed summary for a given date."""
         print(f"This is the summary for {weekday}, {date}.")
         print("Remember to be as detailed as possible - and to use as many "
@@ -488,17 +500,19 @@ class Diary:
             return None
         return year
 
-    def sort_dict_by_value(self, dict, order):
+    @staticmethod
+    def sort_dict_by_value(my_dict, order):
         """Accepts a dictionary and returns the dictionary sorted by value."""
         return {k: v for k, v in sorted(  # Returns a new dictionary
-            dict.items(),  # Selecting from the dictionary "happiness" as a list of tuples
+            my_dict.items(),  # Selecting from the dictionary "happiness" as a list of tuples
             key=lambda pair: pair[1],  # Sorting according to the second item in the tuple, AKA the value
             reverse=bool(order))}  # Reversing because by default it sorts in ascending order
 
     def add_first_entry(self):
         self.new_entry(self.get_current_date(), self.get_current_weekday())
 
-    def list_selection(self, choices, message=""):
+    @staticmethod
+    def list_selection(choices, message=""):
         """Receives a list of choices and an optional message, and users the inquirer
         module to present those options to the user. Returns the user selection."""
         options = [
@@ -519,7 +533,8 @@ class Diary:
                         matches.append(entry)
         return matches
 
-    def convert_num_to_month(self, num):
+    @staticmethod
+    def convert_num_to_month(num):
         """Accepts a number between 1-12 and returns matching month, or None if no match."""
         month_list = ["January", "February", "March", "April", "May", "June",
                       "July", "August", "September", "October", "November", "December"]
@@ -527,7 +542,7 @@ class Diary:
             return month_list[int(num) - 1]
         return None
 
-    # Extra functions ---------------------------------
+    # Extra functions for top-secret highly dangerous dev use ---------------------------------
 
     def import_stats_from_csv(self, filepath):
         """Takes a csv file, and if the file is formatted properly,
@@ -584,8 +599,8 @@ class Diary:
                     if entry["summary"] is None or entry["summary"] == "":
                         continue
                     if string.lower() in entry["summary"].lower():
-                        new_summmary = entry["summary"].replace(string, "")
-                        entry["summary"] = new_summmary
+                        new_summary = entry["summary"].replace(string, "")
+                        entry["summary"] = new_summary
 
     def find_and_replace(self, find, replace):
         """Finds a string and replaces it with a new string."""
@@ -600,4 +615,3 @@ class Diary:
 
 if __name__ == '__main__':
     diary = Diary()
-    # diary.find_and_replace("Cameron Eldrige", "Cameron Eldridge")
