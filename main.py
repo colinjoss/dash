@@ -342,7 +342,7 @@ class Diary:
             os.chdir(main_folder)
             return None
 
-        audio = MP3(main_folder + "\\" + selection)
+        audio = MP3(main_folder + "\\new-update-files\\" + selection)
         length = audio.info.length
         hms_string = self.convert_seconds_to_hms(length)
         os.chdir(main_folder)
