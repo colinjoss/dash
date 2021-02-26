@@ -18,11 +18,7 @@ import pandas as pd
 class Diary:
     def __init__(self):
         with open("diary-data.csv", "r", newline="") as infile:
-            self._entries = pd.read_csv(infile)
-
-            # with open("test-data.csv", 'a', newline="") as outfile:
-            #     self._entries.to_csv(outfile, header=False, encoding="utf-8")
-
+            self._entries = csv.reader(infile)
             self.title()
             self.calendar()
             self.main_menu()
@@ -47,48 +43,47 @@ class Diary:
 
     def main_menu(self):
         """Presents a main menu to the user in the terminal."""
-        done = False
-        while done is False:
+        close_program = False
+        while close_program is False:
             selection = self.list_selection(["Update", "Search", "Close"])
 
             # Prompts user through the diary updating process
             if selection == "Update":
-                self.update_diary()
+                # self.update_diary()
 
             # Prompts user to search and returns a csv with the results
             elif selection == "Search":
                 keyword = str(input("Enter a search term: "))
-                results = self.search_by_keyword(keyword)
-                self.create_search_csv(keyword, results)
+                # results = self.search_by_keyword(keyword)
+                # self.create_search_csv(keyword, results)
 
             # Exits, saves, and updates the yearly csv and stats csv
             else:
-                done = True
+                close_program = True
                 # self.save_to_json()
-                self.update_yearly_csv(self.get_last_entry())
-                self.update_statistics_csv(self.get_last_entry())
+                # self.update_yearly_csv(self.get_last_entry())
+                # self.update_statistics_csv(self.get_last_entry())
                 print("Goodbye!")
 
     def update_diary(self):
         """Records new diary entry(s)."""
-        if not self._entries:  # Handles first-ever entry
-            return self.add_first_entry()
+        today = self.get_current_date()
+        last_entry = self.get_last_date_updated()
 
-        last_entry = self.get_last_entry()["date"]  # If the date of the last entry is not today, calls
-        yesterday = self.get_current_date() - datetime.timedelta(days=1)
-        if last_entry != str(yesterday):  # catch_up to update the missing entries first
+        # catch_up to update the missing entries first
+        if last_entry != today:
             self.catch_up(last_entry)
             selection = self.list_selection(["Yes", "No"], "Would you like to skip today?")
             if selection == "Yes":
-                return
-
-        year = self.get_current_year()  # Creates a new year and/month in self._entries data if it doesn't exist
-        month = self.get_current_month()
-        self.check_new_year(year)
-        self.check_new_month(year, month)
+                return True
 
         entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
-        self._entries[year][month].append(entry)  # Prompts user through entry, saves as dictionary
+        with open("diary-data.csv", 'a', newline="") as outfile:
+            writer = csv.writer(outfile)
+            writer.writerows(entry)
+
+        # Prompts user through entry, saves as dictionary
+
 
     def catch_up(self, last_date):
         """If update_diary determines the current date and the last date the diary was updated
@@ -125,14 +120,10 @@ class Diary:
         weekday = weekday
         summary = self.get_summary_from_user(date, weekday)
         happiness = self.get_happiness_from_user()
+        duration = self.get_mp3_file_length()
         people = self.get_people_from_user()
-        length = self.get_mp3_file_length()
-        return {"date": date,
-                "weekday": weekday,
-                "summary": summary,
-                "happiness": happiness,
-                "people": people,
-                "length": length}
+
+        return [date, weekday, summary, happiness, duration, people]
 
     def search_by_keyword(self, keyword):
         """Accepts a search keyword and returns a list of matches."""
@@ -268,7 +259,7 @@ class Diary:
     @staticmethod
     def get_current_date():
         """Returns the current date."""
-        return datetime.date.today()
+        return datetime.date.today().strftime("%m/%d/%y")
 
     @staticmethod
     def get_current_weekday():
@@ -285,19 +276,10 @@ class Diary:
         """Returns the current year as a string."""
         return datetime.date.today().strftime("%Y")
 
-    def get_last_entry(self):
+    def get_last_date_updated(self):
         """Returns the most recent diary entry, or None if there are
         no entries."""
-        if not self._entries:
-            return None
-
-        entries = []
-        for year in self._entries:
-            for month in self._entries[year]:
-                for entry in self._entries[year][month]:
-                    entries.append(entry)
-
-        return entries[-1]
+        return str(self._entries.iat[-1, 0])
 
     def get_total_entries(self):
         """Returns the total number of user-submitted entries."""
