@@ -76,7 +76,8 @@ class Diary:
 
         # catch_up to update the missing entries first
         if last_entry != today:
-            self.catch_up(last_entry, today)
+            missing_days = self.get_missing_entry_dates(last_entry, today)
+            self.catch_up(missing_days)
             selection = self.list_selection(["Yes", "No"], "Would you like to skip today?")
             if selection == "Yes":
                 return True
@@ -84,27 +85,26 @@ class Diary:
         entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
         self.append_to_csv(entry)
 
-    def catch_up(self, last_entry, today):
-        """If update_diary determines the current date and the last date the diary was updated
-        don't match, catch_up is called to prompt the user to update for multiple previous days."""
-        match = False
-        catch_up_days = []
+    @staticmethod
+    def get_missing_entry_dates(last_entry, today):
+        missing = []
+        one_less_day = None
         less = 1
-        while match is False:   # Processes the missing entries between the last update and current day
+        while one_less_day != last_entry:  # Processes the missing entries between the last update and current day
             one_less_day = today - datetime.timedelta(days=less)
-            if one_less_day == last_entry:
-                match = True
-            else:
-                catch_up_days.append(one_less_day)
+            missing.append(one_less_day)
             less += 1
 
-        catch_up_days.reverse()
+        return missing.reverse()
+
+    def catch_up(self, missing_days):
+        """If update_diary determines the current date and the last date the diary was updated
+        don't match, catch_up is called to prompt the user to update for multiple previous days."""
         print('You need to catch up on some days! Update these first. \n')
-        for day in catch_up_days:   # Cycles through the missing entries, prompting user to update them
+        for day in missing_days:   # Cycles through the missing entries, prompting user to update them
             date = str(day)
             weekday = day.strftime('%A')
             entry = self.new_entry(date, weekday)
-
             self.append_to_csv(entry)
 
     def new_entry(self, date, weekday):
