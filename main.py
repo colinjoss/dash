@@ -53,7 +53,7 @@ class Diary:
 
             # Prompts user through the diary updating process
             if selection == "Update":
-                # self.update_diary()
+                self.update_diary()
 
             # Prompts user to search and returns a csv with the results
             elif selection == "Search":
@@ -74,7 +74,7 @@ class Diary:
         today = self.get_current_date()
         last_entry = self.get_last_date_updated()
 
-        # catch_up to update the missing entries first
+        # If there are entries missing, prompts the user to do those first!
         if last_entry != today:
             missing_days = self.get_missing_entry_dates(last_entry, today)
             self.catch_up(missing_days)
@@ -82,15 +82,18 @@ class Diary:
             if selection == "Yes":
                 return True
 
+        # Prompts user to update the diary for today's date
         entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
         self.append_to_csv(entry)
 
     @staticmethod
     def get_missing_entry_dates(last_entry, today):
+        """Calculates the difference between the date of the last entry and
+        the current date, then returns a list of dates."""
         missing = []
         one_less_day = None
         less = 1
-        while one_less_day != last_entry:  # Processes the missing entries between the last update and current day
+        while one_less_day != last_entry:
             one_less_day = today - datetime.timedelta(days=less)
             missing.append(one_less_day)
             less += 1
@@ -98,8 +101,7 @@ class Diary:
         return missing.reverse()
 
     def catch_up(self, missing_days):
-        """If update_diary determines the current date and the last date the diary was updated
-        don't match, catch_up is called to prompt the user to update for multiple previous days."""
+        """Prompts the user to catch up on missed days with no diary entries."""
         print('You need to catch up on some days! Update these first. \n')
         for day in missing_days:   # Cycles through the missing entries, prompting user to update them
             date = str(day)
@@ -121,15 +123,14 @@ class Diary:
 
     def search_by_keyword(self, keyword):
         """Accepts a search keyword and returns a list of matches."""
-        matches = []
-        for year in self._entries:
-            for month in self._entries[year]:
-                for entry in self._entries[year][month]:
-                    if entry["summary"] is None or isinstance(entry["summary"], str) is False:
-                        continue
-                    elif keyword.lower() in entry["summary"].lower():
-                        matches.append(entry)
-        return matches
+        search_results = []
+        for row in self._entries:
+            if row[2] is None or isinstance(row[2], str) is False:
+                continue
+            if keyword.lower() in row[2].lower():
+                search_results.append(row[2])
+
+        return search_results
 
     @staticmethod
     def create_search_csv(keyword, matches):
@@ -255,6 +256,7 @@ class Diary:
         with open('diary-data.csv', 'a', newline='') as outfile:
             writer = csv.writer(outfile)
             writer.writerow(entry)
+        # May not update self._entries, which could affect search results!
 
     @staticmethod
     def get_current_date():
