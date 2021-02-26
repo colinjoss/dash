@@ -64,7 +64,6 @@ class Diary:
             # Exits, saves, and updates the yearly csv and stats csv
             else:
                 close_program = True
-                # self.save_to_json()
                 # self.update_yearly_csv(self.get_last_entry())
                 # self.update_statistics_csv(self.get_last_entry())
                 print("Goodbye!")
@@ -142,27 +141,7 @@ class Diary:
             csv_writer = csv.writer(infile)
             csv_writer.writerows(search_results)
 
-        return print("Search results successfully generated!\n")
-
-    def edit_entry(self, entry):
-        """Take an entry and prompts the user through editing parts or all of it."""
-        selection = self.list_selection(["summary", "happiness", "people", "cancel"],
-                                        "Which part do you want to edit?")
-        print(entry[selection])
-        if selection == "summary":
-            entry[selection] = self.get_summary_from_user(entry["date"], entry["weekday"])
-        elif selection == "happiness":
-            entry[selection] = self.get_happiness_from_user()
-        elif selection == "people":
-            entry[selection] = self.get_people_from_user()
-        else:
-            return
-
-    def save_to_json(self):
-        """Records entry data to json."""
-        with open("save_data.json", "w") as outfile:
-            all_data = [self._entries]
-            json.dump(all_data, outfile)
+        print("Search results successfully generated!\n")
 
     def update_yearly_csv(self, last_entry):
         """Creates a spreadsheet and saves the most updated year data to it."""
