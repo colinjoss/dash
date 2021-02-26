@@ -18,10 +18,14 @@ import pandas as pd
 class Diary:
     def __init__(self):
         with open("diary-data.csv", "r", newline="") as infile:
-            self._entries = csv.reader(infile)
-            self.title()
-            self.calendar()
-            self.main_menu()
+            data = csv.reader(infile)
+            self._entries = []
+            for row in data:
+                self._entries.append(row)
+
+        self.title()
+        self.calendar()
+        self.main_menu()
 
     @staticmethod
     def title():
@@ -72,46 +76,36 @@ class Diary:
 
         # catch_up to update the missing entries first
         if last_entry != today:
-            self.catch_up(last_entry)
+            self.catch_up(last_entry, today)
             selection = self.list_selection(["Yes", "No"], "Would you like to skip today?")
             if selection == "Yes":
                 return True
 
         entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
-        with open("diary-data.csv", 'a', newline="") as outfile:
-            writer = csv.writer(outfile)
-            writer.writerows(entry)
+        self.append_to_csv(entry)
 
-        # Prompts user through entry, saves as dictionary
-
-
-    def catch_up(self, last_date):
+    def catch_up(self, last_entry, today):
         """If update_diary determines the current date and the last date the diary was updated
         don't match, catch_up is called to prompt the user to update for multiple previous days."""
         match = False
         catch_up_days = []
         less = 1
         while match is False:   # Processes the missing entries between the last update and current day
-            one_less_day = datetime.date.today() - datetime.timedelta(days=less)
-            if str(one_less_day) == last_date:
+            one_less_day = today - datetime.timedelta(days=less)
+            if one_less_day == last_entry:
                 match = True
             else:
                 catch_up_days.append(one_less_day)
             less += 1
 
         catch_up_days.reverse()
-        print("You need to catch up on some days! Update these first. \n")
+        print('You need to catch up on some days! Update these first. \n')
         for day in catch_up_days:   # Cycles through the missing entries, prompting user to update them
             date = str(day)
-            year, month, day = self.split_date(date)
-            weekday = datetime.date(year, month, day).strftime("%A")
+            weekday = day.strftime('%A')
             entry = self.new_entry(date, weekday)
 
-            year = self.get_current_year()
-            month = self.get_current_month()
-            self.check_new_year(year)
-            self.check_new_month(year, month)
-            self._entries[year][month].append(entry)
+            self.append_to_csv(entry)
 
     def new_entry(self, date, weekday):
         """Prompts the user through the components of a diary entry, and
@@ -257,6 +251,12 @@ class Diary:
     # Getters and helpers --------------------------------------
 
     @staticmethod
+    def append_to_csv(entry):
+        with open('diary-data.csv', 'a', newline='') as outfile:
+            writer = csv.writer(outfile)
+            writer.writerow(entry)
+
+    @staticmethod
     def get_current_date():
         """Returns the current date."""
         return datetime.date.today().strftime("%m/%d/%y")
@@ -279,7 +279,7 @@ class Diary:
     def get_last_date_updated(self):
         """Returns the most recent diary entry, or None if there are
         no entries."""
-        return str(self._entries.iat[-1, 0])
+        return datetime.datetime.strptime(self._entries[-1][0], "%m/%d/%y")
 
     def get_total_entries(self):
         """Returns the total number of user-submitted entries."""
