@@ -58,8 +58,8 @@ class Diary:
             # Prompts user to search and returns a csv with the results
             elif selection == "Search":
                 keyword = str(input("Enter a search term: "))
-                # results = self.search_by_keyword(keyword)
-                # self.create_search_csv(keyword, results)
+                search_results = self.search_by_keyword(keyword)
+                self.create_search_csv(keyword, search_results)
 
             # Exits, saves, and updates the yearly csv and stats csv
             else:
@@ -128,27 +128,20 @@ class Diary:
             if row[2] is None or isinstance(row[2], str) is False:
                 continue
             if keyword.lower() in row[2].lower():
-                search_results.append(row[2])
+                search_results.append(row)
 
         return search_results
 
     @staticmethod
-    def create_search_csv(keyword, matches):
+    def create_search_csv(keyword, search_results):
         """Creates a csv file based on search results."""
-        if not matches:
+        if not search_results:
             return print("No results.\n")
 
         with open(f"{keyword.lower()}_{datetime.date.today()}.csv", "w", newline="") as infile:
             csv_writer = csv.writer(infile)
+            csv_writer.writerows(search_results)
 
-            rows = [["Date", "Weekday", "Summary", "Happiness", "File length", "People"]]
-            for entry in matches:   # Formats all search match entries for display in a csv file
-                row = [entry["date"], entry["weekday"], entry["summary"],
-                       entry["happiness"], entry["length"]]
-                row += entry["people"]
-                rows.append(row)
-
-            csv_writer.writerows(rows)
         return print("Search results successfully generated!\n")
 
     def edit_entry(self, entry):
