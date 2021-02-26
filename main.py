@@ -12,13 +12,17 @@ import math
 import csv
 from pyfiglet import Figlet
 import calendar
+import pandas as pd
 
 
 class Diary:
     def __init__(self):
-        with open("save_data.json", "r") as infile:
-            data = json.load(infile)
-            self._entries = data[0]
+        with open("diary-data.csv", "r", newline="") as infile:
+            self._entries = pd.read_csv(infile)
+
+            # with open("test-data.csv", 'a', newline="") as outfile:
+            #     self._entries.to_csv(outfile, header=False, encoding="utf-8")
+
             self.title()
             self.calendar()
             self.main_menu()
@@ -45,26 +49,22 @@ class Diary:
         """Presents a main menu to the user in the terminal."""
         done = False
         while done is False:
-            selection = self.list_selection(["Update", "Search", "Edit", "Close"])
-            if selection == "Update":  # Prompts user through the diary updating process
+            selection = self.list_selection(["Update", "Search", "Close"])
+
+            # Prompts user through the diary updating process
+            if selection == "Update":
                 self.update_diary()
 
-            elif selection == "Search":  # Prompts user to search and returns a csv with the results
+            # Prompts user to search and returns a csv with the results
+            elif selection == "Search":
                 keyword = str(input("Enter a search term: "))
                 results = self.search_by_keyword(keyword)
                 self.create_search_csv(keyword, results)
 
-            elif selection == "Edit":  # Allows the user to edit a particular entry
-                print("YYYY-mm-dd")  # *** NOT FOR MASS DATA MANIPULATION ***
-                date = str(input("Enter the date of the entry you're editing: "))
-                result = self.search_by_date(date)
-                if result is None:
-                    return print("No results.")
-                self.edit_entry(result[0])
-
-            else:  # Exits, saves, and updates the yearly csv and stats csv
+            # Exits, saves, and updates the yearly csv and stats csv
+            else:
                 done = True
-                self.save_to_json()
+                # self.save_to_json()
                 self.update_yearly_csv(self.get_last_entry())
                 self.update_statistics_csv(self.get_last_entry())
                 print("Goodbye!")
