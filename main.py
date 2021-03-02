@@ -1,5 +1,5 @@
 # Author: Colin Joss
-# Last date updated: 2-15-2021
+# Last date updated: 2-26-2021
 # Description: A simple python program for my personal diary system, made with the intention to
 #              speed up the process of maintaining it.
 
@@ -17,11 +17,8 @@ import pandas as pd
 
 class Diary:
     def __init__(self):
-        with open("diary-data.csv", "r", newline="") as infile:
-            data = csv.reader(infile)
-            self._entries = []
-            for row in data:
-                self._entries.append(row)
+        with open("all-data.csv", "r", newline="") as infile:
+            self._entries = pd.read_csv(infile)
 
         self.title()
         self.calendar()
@@ -64,8 +61,7 @@ class Diary:
             # Exits, saves, and updates the yearly csv and stats csv
             else:
                 close_program = True
-                # self.update_yearly_csv(self.get_last_entry())
-                # self.update_statistics_csv(self.get_last_entry())
+                self.update_statistics_csv(self.get_last_date_updated())
                 print("Goodbye!")
 
     def update_diary(self):
@@ -102,23 +98,25 @@ class Diary:
     def catch_up(self, missing_days):
         """Prompts the user to catch up on missed days with no diary entries."""
         print('You need to catch up on some days! Update these first. \n')
-        for day in missing_days:   # Cycles through the missing entries, prompting user to update them
+        for day in missing_days:
             date = str(day)
+            year = day.year
             weekday = day.strftime('%A')
-            entry = self.new_entry(date, weekday)
+            entry = self.new_entry(date, year, weekday)
             self.append_to_csv(entry)
 
-    def new_entry(self, date, weekday):
+    def new_entry(self, date, year, weekday):
         """Prompts the user through the components of a diary entry, and
         then adds the entry to the list of all entries."""
         date = date
+        year = year
         weekday = weekday
         summary = self.get_summary_from_user(date, weekday)
         happiness = self.get_happiness_from_user()
         duration = self.get_mp3_file_length()
         people = self.get_people_from_user()
 
-        return [date, weekday, summary, happiness, duration, people]
+        return [date, year, weekday, summary, happiness, duration, people]
 
     def search_by_keyword(self, keyword):
         """Accepts a search keyword and returns a list of matches."""
@@ -143,89 +141,78 @@ class Diary:
 
         print("Search results successfully generated!\n")
 
-    def update_yearly_csv(self, last_entry):
-        """Creates a spreadsheet and saves the most updated year data to it."""
-        year = self.get_current_year()
-        if last_entry is None:
-            return None
-        if str(year) not in last_entry["date"]:
-            return None
-
-        with open(f"{year}.csv", "w", newline="") as infile:
-            csv_writer = csv.writer(infile)
-
-            rows = [["Date", "Weekday", "Summary", "Happiness", "File length", "People"]]
-            for month in self._entries[str(year)]:
-                for entry in self._entries[str(year)][month]:
-                    row = [entry["date"], entry["weekday"], entry["summary"],
-                           entry["happiness"], entry["length"]]
-                    row += entry["people"]
-                    rows.append(row)
-
-            csv_writer.writerows(rows)
-        return print("Yearly spreadsheet successfully updated.\n")
-
     def update_statistics_csv(self, last_entry):
         """Automatically calculates a set of statistics from my diary and
         organizes it in a csv."""
         if last_entry is None:
             return None
 
-        rows = [["GENERAL STATISTICS"],
-                ["Entries: ", self.get_total_entries()],
-                ["Files: ", self.get_total_files()],
-                ["Sum file length: ", self.get_total_length()],
-                [""]]
+        epoch = 2013
+        current_year = int(self.get_current_year())
+        total_years = []
 
-        years = [year for year in self._entries]
-        rows.append(["YEARS RANKED"])
-        h_year = self.get_happiest_year()
-        for key in h_year:
-            rows.append([key, h_year[key]])
-        rows.append("")
+        while current_year != epoch:
+            current_year = current_year - 1
+            total_years.append(current_year)
 
-        for year in years:
-            h_month = self.get_happiest_month(year)
-            h_week = self.get_happiest_weekday(year)
-            m_people = self.get_most_mentioned_people(year)
-            rows.append([f"MONTHS RANKED {year}", "", f"WEEKDAYS RANKED {year}", "", f"MOST MENTIONED {year}"])
-            this_year = []
-            for month in h_month:
-                this_year.append([month, h_month[month]])
+        for year in total_years:
+            current_year = self._entries.loc[self._entries['year'] == year]
+            year_happiness = current_year.describe()['happiness']['mean']
 
-            index = 0
-            for weekday in h_week:
-                try:
-                    this_year[index] += [weekday, h_week[weekday]]
-                    index += 1
-                except IndexError:
-                    pass
+            months_ranked = self.calculate_happiest_month(current_year)
+            weekdays_ranked = self.calculate_happiest_weekday(current_year)
+            people_ranked = self.calculate_most_mentioned(current_year)
 
-            index = 0
-            for person in m_people:
-                try:
-                    if index > 6:
-                        continue
-                    this_year[index] += [person, m_people[person]]
-                    index += 1
-                except IndexError:
-                    pass
+            v = 'w' if year == int(self.get_current_year())-1 else 'a'
+            with open('stats_test.csv', f'{v}', newline="") as outfile:
+                pd.DataFrame({year: year_happiness}, index=[year]).to_csv(outfile)
+                pd.DataFrame(months_ranked, index=[year]).to_csv(outfile)
+                pd.DataFrame(weekdays_ranked, index=[year]).to_csv(outfile)
+                pd.DataFrame(people_ranked, index=[year])[0:10].to_csv(outfile)
 
-            for row in this_year:
-                rows.append(row)
-            rows.append([""])
+    def calculate_happiest_month(self, current_year):
+        months_ranked = {}
+        for month in ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'November', 'December']:
+            current_month = current_year.loc[current_year['month'] == month]
+            month_happiness = current_month.describe()['happiness']['mean']
+            months_ranked[month] = month_happiness
 
-        with open(f"statistics.csv", "w", newline="") as infile:
-            csv_writer = csv.writer(infile)
-            csv_writer.writerows(rows)
+        return self.sort_dict_by_value(months_ranked, True)
 
-        return print("Statistics spreadsheet successfully updated.\n")
+    def calculate_happiest_weekday(self, current_year):
+        weekdays_ranked = {}
+        for weekday in ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']:
+            current_weekday = current_year.loc[current_year['weekday'] == weekday]
+            print(current_weekday)
+            month_happiness = current_weekday.describe()['happiness']['mean']
+            print(month_happiness)
+            weekdays_ranked[weekday] = month_happiness
+
+        return self.sort_dict_by_value(weekdays_ranked, True)
+
+    def calculate_most_mentioned(self, current_year):
+        people_ranked = {}
+        for people in current_year['people'].tolist():
+            if isinstance(people, str) is False:
+                continue
+
+            for person in people.split(', '):
+                if person not in people_ranked:
+                    people_ranked[person.title()] = 1
+                else:
+                    people_ranked[person.title()] += 1
+
+        return self.sort_dict_by_value(people_ranked, True)
 
     # Getters and helpers --------------------------------------
 
-    @staticmethod
-    def append_to_csv(entry):
-        with open('diary-data.csv', 'a', newline='') as outfile:
+    def append_to_csv(self, entry):
+        with open(f'{self.get_current_year()}.csv', 'a', newline='') as outfile:
+            writer = csv.writer(outfile)
+            writer.writerow(entry)
+
+        with open(f'all-data.csv', 'a', newline='') as outfile:
             writer = csv.writer(outfile)
             writer.writerow(entry)
         # May not update self._entries, which could affect search results!
@@ -253,7 +240,10 @@ class Diary:
     def get_last_date_updated(self):
         """Returns the most recent diary entry, or None if there are
         no entries."""
-        return datetime.datetime.strptime(self._entries[-1][0], "%m/%d/%y")
+        if self._entries is None:
+            return None
+        print(self._entries["date"][:-1])
+        return self._entries["date"][:-1]
 
     def get_total_entries(self):
         """Returns the total number of user-submitted entries."""
