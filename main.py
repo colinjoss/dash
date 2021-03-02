@@ -208,13 +208,8 @@ class Diary:
     # Getters and helpers --------------------------------------
 
     def append_to_csv(self, entry):
-        with open(f'{self.get_current_year()}.csv', 'a', newline='') as outfile:
-            writer = csv.writer(outfile)
-            writer.writerow(entry)
-
         with open(f'all-data.csv', 'a', newline='') as outfile:
-            writer = csv.writer(outfile)
-            writer.writerow(entry)
+            self._entries.to_csv(entry)
         # May not update self._entries, which could affect search results!
 
     @staticmethod
