@@ -90,6 +90,8 @@ class Diary:
         missing = []
         one_less_day = None
         less = 1
+
+        # Collects dates in list between the current date and the date of the last entry
         while one_less_day != last_entry:
             if one_less_day is not None:
                 missing.append(one_less_day)
@@ -130,6 +132,8 @@ class Diary:
         for row in self._entries:
             if row[2] is None or isinstance(row[2], str) is False:
                 continue
+
+            # Searches for a keyword match each entry's summary
             if keyword.lower() in row[2].lower():
                 search_results.append(row)
 
@@ -144,12 +148,12 @@ class Diary:
         with open(f"{keyword.lower()}_{datetime.date.today()}.csv", "w", newline="") as infile:
             csv_writer = csv.writer(infile)
             csv_writer.writerows(search_results)
-
         print("Search results successfully generated!\n")
 
     def update_statistics_csv(self, last_entry):
         """Automatically calculates a set of statistics from my diary and
         organizes it in a csv."""
+        print(self.get_total_files())
         if last_entry is None:
             return None
 
@@ -172,13 +176,15 @@ class Diary:
 
             # Updates the stats spreadsheet
             v = 'w' if year == int(self.get_current_year())-1 else 'a'
-            with open('stats_test.csv', f'{v}', newline="") as outfile:
+            with open('statistics.csv', f'{v}', newline="") as outfile:
                 pd.DataFrame({year: year_happiness}, index=[year]).to_csv(outfile)
                 pd.DataFrame(months_ranked, index=[year]).to_csv(outfile)
                 pd.DataFrame(weekdays_ranked, index=[year]).to_csv(outfile)
                 pd.DataFrame(people_ranked, index=[year])[0:10].to_csv(outfile)
 
     def calculate_happiest_month(self, current_year):
+        """Takes the current year and returns a dictionary of the months in that
+        year sorted by their happiness rating."""
         months_ranked = {}
         for month in ['January', 'February', 'March', 'April', 'May', 'June',
                       'July', 'August', 'September', 'November', 'December']:
@@ -189,6 +195,8 @@ class Diary:
         return self.sort_dict_by_value(months_ranked, True)
 
     def calculate_happiest_weekday(self, current_year):
+        """Takes the current year and returns a dictionary of the weekdays in that
+        year sorted by their happiness rating."""
         weekdays_ranked = {}
         for weekday in ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']:
             current_weekday = current_year.loc[current_year['weekday'] == weekday]
@@ -198,6 +206,8 @@ class Diary:
         return self.sort_dict_by_value(weekdays_ranked, True)
 
     def calculate_most_mentioned(self, current_year):
+        """Takes the current year and returns a dictionary of the people mentioned
+        that year sorted by how many times they were mentioned."""
         people_ranked = {}
         for people in current_year['people'].tolist():
             if isinstance(people, str) is False:
@@ -212,16 +222,6 @@ class Diary:
         return self.sort_dict_by_value(people_ranked, True)
 
     # Getters and helpers --------------------------------------
-
-    def append_to_csv(self, entry):
-        # Appends new entry as a row to the data csv
-        with open('diary-data.csv', 'a', newline='') as outfile:
-            writer = csv.writer(outfile)
-            writer.writerow(entry)
-
-        # Reloads the newly updated csv into the diary assistant program
-        with open('diary-data.csv', 'r', newline='') as infile:
-            self._entries = pd.read_csv(infile)
 
     @staticmethod
     def get_current_date():
@@ -253,21 +253,12 @@ class Diary:
 
     def get_total_entries(self):
         """Returns the total number of user-submitted entries."""
-        count = 0
-        for year in self._entries:
-            for month in self._entries[year]:
-                count += len(self._entries[year][month])
-        return count
+        return len(self._entries)
 
     def get_total_files(self):
         """Returns the total number of user-submitted files."""
-        count = 0
-        for year in self._entries:
-            for month in self._entries[year]:
-                for entry in self._entries[year][month]:
-                    if entry["length"] is not None:
-                        count += 1
-        return count
+        duration_df = self._entries['duration'].dropna()
+        return len(duration_df)
 
     def get_total_length(self):
         """Calculates the sum total amount of recording time."""
@@ -299,6 +290,16 @@ class Diary:
         hms_string = self.convert_seconds_to_hms(length)
         os.chdir(main_folder)
         return hms_string
+
+    def append_to_csv(self, entry):
+        # Appends new entry as a row to the data csv
+        with open('diary-data.csv', 'a', newline='') as outfile:
+            writer = csv.writer(outfile)
+            writer.writerow(entry)
+
+        # Reloads the newly updated csv into the diary assistant program
+        with open('diary-data.csv', 'r', newline='') as infile:
+            self._entries = pd.read_csv(infile)
 
     @staticmethod
     def convert_seconds_to_hms(seconds):
@@ -389,7 +390,8 @@ class Diary:
             reverse=bool(order))}  # Reversing because by default it sorts in ascending order
 
     def add_first_entry(self):
-        self.new_entry(self.get_current_date(), self.get_current_weekday())
+        self.new_entry(self.get_current_date(), self.get_current_year(),
+                       self.get_current_month(), self.get_current_weekday())
 
     @staticmethod
     def list_selection(choices, message=""):
@@ -470,7 +472,6 @@ class Diary:
                 "people": people,
                 "length": length
             })
-        self.save_to_json()
 
     def remove_string_from_summary(self, string):
         for year in self._entries:
