@@ -1,10 +1,10 @@
 # Author: Colin Joss
-# Last date updated: 2-26-2021
+# Last date updated: 3-2-2021
 # Description: A simple python program for my personal diary system, made with the intention to
 #              speed up the process of maintaining it.
 
 import datetime
-import json
+from datetime import datetime as dt
 import os
 import inquirer
 from mutagen.mp3 import MP3
@@ -17,7 +17,7 @@ import pandas as pd
 
 class Diary:
     def __init__(self):
-        with open("all-data.csv", "r", newline="") as infile:
+        with open("diary-data.csv", "r", newline="") as infile:
             self._entries = pd.read_csv(infile)
 
         self.title()
@@ -72,13 +72,15 @@ class Diary:
         # If there are entries missing, prompts the user to do those first!
         if last_entry != today:
             missing_days = self.get_missing_entry_dates(last_entry, today)
+            print(missing_days)
             self.catch_up(missing_days)
             selection = self.list_selection(["Yes", "No"], "Would you like to skip today?")
             if selection == "Yes":
                 return True
 
         # Prompts user to update the diary for today's date
-        entry = self.new_entry(self.get_current_date(), self.get_current_weekday())
+        entry = self.new_entry(self.get_current_date(), self.get_current_year(),
+                               self.get_current_month(), self.get_current_weekday())
         self.append_to_csv(entry)
 
     @staticmethod
@@ -89,34 +91,38 @@ class Diary:
         one_less_day = None
         less = 1
         while one_less_day != last_entry:
-            one_less_day = today - datetime.timedelta(days=less)
-            missing.append(one_less_day)
+            if one_less_day is not None:
+                missing.append(one_less_day)
+            one_less_day = (dt.strptime(today, '%m/%d/%y') - datetime.timedelta(days=less)).strftime('%m/%d/%Y')
             less += 1
-
-        return missing.reverse()
+        missing.reverse()
+        return missing
 
     def catch_up(self, missing_days):
         """Prompts the user to catch up on missed days with no diary entries."""
         print('You need to catch up on some days! Update these first. \n')
         for day in missing_days:
-            date = str(day)
-            year = day.year
-            weekday = day.strftime('%A')
-            entry = self.new_entry(date, year, weekday)
+            date_object = dt.strptime(day, '%m/%d/%Y')
+            date = day
+            year = date_object.strftime('%Y')
+            month = date_object.strftime('%B')
+            weekday = date_object.strftime('%A')
+            entry = self.new_entry(date, year, month, weekday)
             self.append_to_csv(entry)
 
-    def new_entry(self, date, year, weekday):
+    def new_entry(self, date, year, month, weekday):
         """Prompts the user through the components of a diary entry, and
         then adds the entry to the list of all entries."""
         date = date
         year = year
+        month = month
         weekday = weekday
         summary = self.get_summary_from_user(date, weekday)
         happiness = self.get_happiness_from_user()
         duration = self.get_mp3_file_length()
         people = self.get_people_from_user()
 
-        return [date, year, weekday, summary, happiness, duration, people]
+        return [date, year, month, weekday, summary, happiness, duration, people]
 
     def search_by_keyword(self, keyword):
         """Accepts a search keyword and returns a list of matches."""
@@ -147,22 +153,24 @@ class Diary:
         if last_entry is None:
             return None
 
-        epoch = 2013
+        # Generates list of all complete years (except 2013, a partial)
         current_year = int(self.get_current_year())
         total_years = []
-
-        while current_year != epoch:
+        while current_year != 2013:
             current_year = current_year - 1
             total_years.append(current_year)
 
+        # Calculate key statistics for every available year
         for year in total_years:
             current_year = self._entries.loc[self._entries['year'] == year]
             year_happiness = current_year.describe()['happiness']['mean']
 
+            # Calculate lists of months and weekdays ranked by happiness, people ranked by mentions
             months_ranked = self.calculate_happiest_month(current_year)
             weekdays_ranked = self.calculate_happiest_weekday(current_year)
             people_ranked = self.calculate_most_mentioned(current_year)
 
+            # Updates the stats spreadsheet
             v = 'w' if year == int(self.get_current_year())-1 else 'a'
             with open('stats_test.csv', f'{v}', newline="") as outfile:
                 pd.DataFrame({year: year_happiness}, index=[year]).to_csv(outfile)
@@ -184,9 +192,7 @@ class Diary:
         weekdays_ranked = {}
         for weekday in ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']:
             current_weekday = current_year.loc[current_year['weekday'] == weekday]
-            print(current_weekday)
             month_happiness = current_weekday.describe()['happiness']['mean']
-            print(month_happiness)
             weekdays_ranked[weekday] = month_happiness
 
         return self.sort_dict_by_value(weekdays_ranked, True)
@@ -208,9 +214,14 @@ class Diary:
     # Getters and helpers --------------------------------------
 
     def append_to_csv(self, entry):
-        with open(f'all-data.csv', 'a', newline='') as outfile:
-            self._entries.to_csv(entry)
-        # May not update self._entries, which could affect search results!
+        # Appends new entry as a row to the data csv
+        with open('diary-data.csv', 'a', newline='') as outfile:
+            writer = csv.writer(outfile)
+            writer.writerow(entry)
+
+        # Reloads the newly updated csv into the diary assistant program
+        with open('diary-data.csv', 'r', newline='') as infile:
+            self._entries = pd.read_csv(infile)
 
     @staticmethod
     def get_current_date():
@@ -237,8 +248,8 @@ class Diary:
         no entries."""
         if self._entries is None:
             return None
-        print(self._entries["date"][:-1])
-        return self._entries["date"][:-1]
+        date_object = dt.strptime(self._entries['date'].iloc[-1], '%m/%d/%Y')
+        return date_object.strftime('%m/%d/%Y')
 
     def get_total_entries(self):
         """Returns the total number of user-submitted entries."""
