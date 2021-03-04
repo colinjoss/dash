@@ -22,6 +22,7 @@ class Diary:
 
         self.title()
         self.calendar()
+        self.get_total_length()
         self.main_menu()
 
     @staticmethod
@@ -262,18 +263,16 @@ class Diary:
 
     def get_total_length(self):
         """Calculates the sum total amount of recording time."""
-        sum_in_seconds = 0
-        for year in self._entries:
-            for month in self._entries[year]:
-                for entry in self._entries[year][month]:
-                    if entry["length"] is None or entry["length"] == " ":
-                        continue
-                    hours, minutes, seconds = self.split_time(entry["length"])
-                    hours = self.times_sixty(self.times_sixty(hours))
-                    minutes = self.times_sixty(minutes)
-                    sum_in_seconds += (hours + minutes + seconds)
+        duration_df = self._entries['duration'].dropna()
+        duration_sum = datetime.timedelta(hours=0, minutes=0, seconds=0)
+        for duration in duration_df.tolist():
+            if duration == ' ':
+                continue
+            hms = duration.split(':')
+            time_obj = datetime.timedelta(hours=int(hms[0]), minutes=int(hms[1]), seconds=int(hms[2]))
+            duration_sum += time_obj
 
-        return self.convert_seconds_to_hms(sum_in_seconds)
+        return duration_sum
 
     def get_mp3_file_length(self):
         """Prompts user to select an mp3 file and returns the length of
@@ -292,6 +291,7 @@ class Diary:
         return hms_string
 
     def append_to_csv(self, entry):
+        """Adds a new row of data to the diary csv and reloads the csv as a dataframe."""
         # Appends new entry as a row to the data csv
         with open('diary-data.csv', 'a', newline='') as outfile:
             writer = csv.writer(outfile)
@@ -308,19 +308,6 @@ class Diary:
         minutes, seconds = divmod(seconds, 60)
         hours, minutes = divmod(minutes, 60)
         return f"{math.floor(hours)}:{math.floor(minutes)}:{math.floor(seconds)}"
-
-    @staticmethod
-    def split_time(time):
-        """Accepts a string formatted as "H:M:S:" and returns the hours,
-        minutes, and seconds separately."""
-        time_list = str(time).split(":")
-        return int(time_list[0]), int(time_list[1]), int(time_list[2])
-
-    @staticmethod
-    def split_date(date):
-        """Splits a hyphenated date into its year/month/day parts, and returns each as an int."""
-        date_list = str(date).split("-")
-        return int(date_list[0]), int(date_list[1]), int(date_list[2])
 
     @staticmethod
     def times_sixty(num):
@@ -363,14 +350,16 @@ class Diary:
         done = False
         count = 1
         people = []
-        print("Please input all the names of people - first and last - who are noteworthy to this day.")
+        print("Input all the names of people - first and last - who are noteworthy to this day.")
         while done is False:
+            selection = self.list_selection(["Continue", "Cancel"], "Please enter a name.")
+            if selection == "Cancel":
+                done = True
+                continue
             person = str(input(f"{count}: "))
             people.append(person)
             count += 1
-            selection = self.list_selection(["Yes", "No"], "Add another name?")
-            if selection == "No":
-                done = True
+
         return people
 
     def get_year_from_user(self):
