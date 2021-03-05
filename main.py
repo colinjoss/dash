@@ -1,5 +1,5 @@
 # Author: Colin Joss
-# Last date updated: 3-2-2021
+# Last date updated: 3-4-2021
 # Description: A simple python program for my personal diary system, made with the intention to
 #              speed up the process of maintaining it.
 
@@ -17,12 +17,10 @@ import pandas as pd
 
 class Diary:
     def __init__(self):
-        with open("diary-data.csv", "r", newline="") as infile:
-            self._entries = pd.read_csv(infile)
-
+        with open('diary-data.csv', 'r', newline='') as infile:
+            self._diary = pd.read_csv(infile)
         self.title()
         self.calendar()
-        self.get_total_length()
         self.main_menu()
 
     @staticmethod
@@ -47,23 +45,29 @@ class Diary:
         """Presents a main menu to the user in the terminal."""
         close_program = False
         while close_program is False:
-            selection = self.list_selection(["Update", "Search", "Close"])
+            selection = self.list_selection(['Update diary', 'Search diary', 'Statistics', 'Exit'])
 
             # Prompts user through the diary updating process
-            if selection == "Update":
+            if selection == 'Update diary':
                 self.update_diary()
 
             # Prompts user to search and returns a csv with the results
-            elif selection == "Search":
-                keyword = str(input("Enter a search term: "))
-                search_results = self.search_by_keyword(keyword)
-                self.create_search_csv(keyword, search_results)
+            elif selection == 'Search diary':
+                keyword = str(input('Enter a search term: '))
+                self.search_by_keyword(keyword)
+            
+            # Generates a csv of yearly and monthly statistics
+            elif selection == 'Statistics':
+                print(f'Total # of data entries:   {self.get_total_files()}')
+                print(f'Total # of recorded files: {self.get_total_entries()}')
+                print(f'Total recording duration:  {self.get_total_length()} hours')
+                print('Statistics csv successfully generated!\n')
+                self.update_statistics_csv(self.get_last_date_updated())
 
-            # Exits, saves, and updates the yearly csv and stats csv
+            # Exits
             else:
                 close_program = True
-                self.update_statistics_csv(self.get_last_date_updated())
-                print("Goodbye!")
+                print('Goodbye!')
 
     def update_diary(self):
         """Records new diary entry(s)."""
@@ -71,13 +75,14 @@ class Diary:
         last_entry = self.get_last_date_updated()
 
         # If there are entries missing, prompts the user to do those first!
-        if last_entry != today:
-            missing_days = self.get_missing_entry_dates(last_entry, today)
-            print(missing_days)
-            self.catch_up(missing_days)
-            selection = self.list_selection(["Yes", "No"], "Would you like to skip today?")
-            if selection == "Yes":
-                return True
+        if self._diary.empty is False:
+            if last_entry != today:
+                missing_days = self.get_missing_entry_dates(last_entry, today)
+                print(missing_days)
+                self.catch_up(missing_days)
+                selection = self.list_selection(['Yes', 'No'], 'Would you like to skip today?')
+                if selection == 'Yes':
+                    return True
 
         # Prompts user to update the diary for today's date
         entry = self.new_entry(self.get_current_date(), self.get_current_year(),
@@ -129,32 +134,24 @@ class Diary:
 
     def search_by_keyword(self, keyword):
         """Accepts a search keyword and returns a list of matches."""
-        search_results = []
-        for row in self._entries:
-            if row[2] is None or isinstance(row[2], str) is False:
-                continue
+        # Makes every summary lower case before searching
+        summary_save = self._diary['summary']
+        self._diary['summary'] = self._diary['summary'].str.lower()
+        search_df = self._diary[self._diary['summary'].str.contains(f'{keyword.lower()}', na=False)]
 
-            # Searches for a keyword match each entry's summary
-            if keyword.lower() in row[2].lower():
-                search_results.append(row)
+        if search_df.empty:
+            print('No results\n')
+        else:
+            search_df.to_csv(f'{keyword}.csv')
+            print('Search results csv successfully generated!')
 
-        return search_results
-
-    @staticmethod
-    def create_search_csv(keyword, search_results):
-        """Creates a csv file based on search results."""
-        if not search_results:
-            return print("No results.\n")
-
-        with open(f"{keyword.lower()}_{datetime.date.today()}.csv", "w", newline="") as infile:
-            csv_writer = csv.writer(infile)
-            csv_writer.writerows(search_results)
-        print("Search results successfully generated!\n")
+        # Preserves the original case
+        self._diary['summary'] = summary_save
+        return True
 
     def update_statistics_csv(self, last_entry):
         """Automatically calculates a set of statistics from my diary and
         organizes it in a csv."""
-        print(self.get_total_files())
         if last_entry is None:
             return None
 
@@ -167,7 +164,7 @@ class Diary:
 
         # Calculate key statistics for every available year
         for year in total_years:
-            current_year = self._entries.loc[self._entries['year'] == year]
+            current_year = self._diary.loc[self._diary['year'] == year]
             year_happiness = current_year.describe()['happiness']['mean']
 
             # Calculate lists of months and weekdays ranked by happiness, people ranked by mentions
@@ -177,8 +174,8 @@ class Diary:
 
             # Updates the stats spreadsheet
             v = 'w' if year == int(self.get_current_year())-1 else 'a'
-            with open('statistics.csv', f'{v}', newline="") as outfile:
-                pd.DataFrame({year: year_happiness}, index=[year]).to_csv(outfile)
+            with open('statistics.csv', f'{v}', newline='') as outfile:
+                pd.DataFrame({'': year_happiness}, index=[year]).to_csv(outfile)
                 pd.DataFrame(months_ranked, index=[year]).to_csv(outfile)
                 pd.DataFrame(weekdays_ranked, index=[year]).to_csv(outfile)
                 pd.DataFrame(people_ranked, index=[year])[0:10].to_csv(outfile)
@@ -188,7 +185,7 @@ class Diary:
         year sorted by their happiness rating."""
         months_ranked = {}
         for month in ['January', 'February', 'March', 'April', 'May', 'June',
-                      'July', 'August', 'September', 'November', 'December']:
+                      'July', 'August', 'September', 'October', 'November', 'December']:
             current_month = current_year.loc[current_year['month'] == month]
             month_happiness = current_month.describe()['happiness']['mean']
             months_ranked[month] = month_happiness
@@ -227,43 +224,43 @@ class Diary:
     @staticmethod
     def get_current_date():
         """Returns the current date."""
-        return datetime.date.today().strftime("%m/%d/%y")
+        return datetime.date.today().strftime('%m/%d/%y')
 
     @staticmethod
     def get_current_weekday():
         """Returns the current day of the week as a string."""
-        return datetime.date.today().strftime("%A")
+        return datetime.date.today().strftime('%A')
 
     @staticmethod
     def get_current_month():
         """Returns the current month of the year as a string."""
-        return datetime.date.today().strftime("%B")
+        return datetime.date.today().strftime('%B')
 
     @staticmethod
     def get_current_year():
         """Returns the current year as a string."""
-        return datetime.date.today().strftime("%Y")
+        return datetime.date.today().strftime('%Y')
 
     def get_last_date_updated(self):
         """Returns the most recent diary entry, or None if there are
         no entries."""
-        if self._entries is None:
+        if self._diary is None:
             return None
-        date_object = dt.strptime(self._entries['date'].iloc[-1], '%m/%d/%Y')
+        date_object = dt.strptime(self._diary['date'].iloc[-1], '%m/%d/%Y')
         return date_object.strftime('%m/%d/%Y')
 
     def get_total_entries(self):
         """Returns the total number of user-submitted entries."""
-        return len(self._entries)
+        return len(self._diary)
 
     def get_total_files(self):
         """Returns the total number of user-submitted files."""
-        duration_df = self._entries['duration'].dropna()
+        duration_df = self._diary['duration'].dropna()
         return len(duration_df)
 
     def get_total_length(self):
         """Calculates the sum total amount of recording time."""
-        duration_df = self._entries['duration'].dropna()
+        duration_df = self._diary['duration'].dropna()
         duration_sum = datetime.timedelta(hours=0, minutes=0, seconds=0)
         for duration in duration_df.tolist():
             if duration == ' ':
@@ -278,13 +275,13 @@ class Diary:
         """Prompts user to select an mp3 file and returns the length of
         the linked file if it is an mp3, but None if it is any other file type."""
         main_folder = os.getcwd()
-        os.chdir(main_folder + "\\new-update-files")
-        selection = self.list_selection(["No file"] + os.listdir(), "Which file?")
-        if selection == "No file":
+        os.chdir(main_folder + '\\new-update-files')
+        selection = self.list_selection(['No file'] + os.listdir(), 'Which file?')
+        if selection == 'No file':
             os.chdir(main_folder)
             return None
 
-        audio = MP3(main_folder + "\\new-update-files\\" + selection)
+        audio = MP3(main_folder + '\\new-update-files\\' + selection)
         length = audio.info.length
         hms_string = self.convert_seconds_to_hms(length)
         os.chdir(main_folder)
@@ -299,7 +296,7 @@ class Diary:
 
         # Reloads the newly updated csv into the diary assistant program
         with open('diary-data.csv', 'r', newline='') as infile:
-            self._entries = pd.read_csv(infile)
+            self._diary = pd.read_csv(infile)
 
     @staticmethod
     def convert_seconds_to_hms(seconds):
@@ -307,42 +304,27 @@ class Diary:
         with hours and minutes, divided by colons."""
         minutes, seconds = divmod(seconds, 60)
         hours, minutes = divmod(minutes, 60)
-        return f"{math.floor(hours)}:{math.floor(minutes)}:{math.floor(seconds)}"
-
-    @staticmethod
-    def times_sixty(num):
-        """Accepts a number and returns the product of it and 60."""
-        return num * 60
-
-    def check_new_year(self, year):
-        """Checks if the current year is contained in self._entries, and if not, creates a new year."""
-        if year not in self._entries:
-            self._entries[year] = {}
-
-    def check_new_month(self, year, month):
-        """Checks if the current month is contained in self._entries, and if not, creates a new month."""
-        if month not in self._entries[year]:
-            self._entries[year][month] = []
+        return f'{math.floor(hours)}:{math.floor(minutes)}:{math.floor(seconds)}'
 
     @staticmethod
     def get_summary_from_user(date, weekday):
         """Prompts the user through a detailed summary for a given date."""
-        print(f"This is the summary for {weekday}, {date}.")
-        print("Remember to be as detailed as possible - and to use as many "
-              "KEYWORDS as you can! \n")
-        morning = str(input("This morning, I... "))
-        afternoon = str(input("In the afternoon, I... "))
-        evening = str(input("During the evening, I... "))
-        opinion = str(input("Overall, I'd say today was... "))
+        print(f'This is the summary for {weekday}, {date}.')
+        print('Remember to be as detailed as possible - and to use as many '
+              'KEYWORDS as you can! \n')
+        morning = str(input('This morning, I... '))
+        afternoon = str(input('In the afternoon, I... '))
+        evening = str(input('During the evening, I... '))
+        opinion = str(input('Overall, I\'d say today was... '))
 
-        summary = f"This morning, I {morning} In the afternoon, I {afternoon} " \
-                  f"During the evening, I {evening} Overall, I'd say today was {opinion}"
+        summary = f'This morning, I {morning} In the afternoon, I {afternoon} ' \
+                  f'During the evening, I {evening} Overall, I\'d say today was {opinion}'
         return summary
 
     def get_happiness_from_user(self):
         """Prompts users to select from a list of ratings and then returns that rating."""
         selection = self.list_selection([1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0],
-                                        "How would you rate today?")
+                                        'How would you rate today?')
         return float(selection)
 
     def get_people_from_user(self):
@@ -350,25 +332,17 @@ class Diary:
         done = False
         count = 1
         people = []
-        print("Input all the names of people - first and last - who are noteworthy to this day.")
+        print('Input all the names of people - first and last - who are noteworthy to this day.')
         while done is False:
-            selection = self.list_selection(["Continue", "Cancel"], "Please enter a name.")
-            if selection == "Cancel":
+            selection = self.list_selection(['Continue', 'Cancel'], 'Please enter a name.')
+            if selection == 'Cancel':
                 done = True
                 continue
-            person = str(input(f"{count}: "))
+            person = str(input(f'{count}: '))
             people.append(person)
             count += 1
 
         return people
-
-    def get_year_from_user(self):
-        """Prompts the user to input a valid year (contained within self._entries).
-        Returns None if year is invalid."""
-        year = str(input("Please input a year as a four-digit number: "))
-        if len(year) != 4 or year not in self._entries:
-            return None
-        return year
 
     @staticmethod
     def sort_dict_by_value(my_dict, order):
@@ -377,10 +351,6 @@ class Diary:
             my_dict.items(),  # Selecting from the dictionary "happiness" as a list of tuples
             key=lambda pair: pair[1],  # Sorting according to the second item in the tuple, AKA the value
             reverse=bool(order))}  # Reversing because by default it sorts in ascending order
-
-    def add_first_entry(self):
-        self.new_entry(self.get_current_date(), self.get_current_year(),
-                       self.get_current_month(), self.get_current_weekday())
 
     @staticmethod
     def list_selection(choices, message=""):
@@ -392,17 +362,9 @@ class Diary:
                           choices=choices
                           )]
         selection = inquirer.prompt(options)
-        return selection["list"]
+        return selection['list']
 
-    def search_by_date(self, search_date):
-        """Accepts a search date and returns a list of matches."""
-        matches = []
-        for year in self._entries:
-            for month in self._entries[year]:
-                for entry in self._entries[year][month]:
-                    if search_date in entry["date"]:
-                        matches.append(entry)
-        return matches
+    # Extra functions for top-secret highly dangerous dev use ---------------------------------
 
     @staticmethod
     def convert_num_to_month(num):
@@ -412,8 +374,6 @@ class Diary:
         if 1 <= num <= 12:
             return month_list[int(num) - 1]
         return None
-
-    # Extra functions for top-secret highly dangerous dev use ---------------------------------
 
     def import_stats_from_csv(self, filepath):
         """Takes a csv file, and if the file is formatted properly,
@@ -448,12 +408,12 @@ class Diary:
             except IndexError:
                 pass
 
-            if str(year) not in self._entries:  # Creates correct dicts / lists if new year / month
-                self._entries[str(year)] = {}
-            if str(month) not in self._entries[str(year)]:
-                self._entries[str(year)][str(month)] = []
+            if str(year) not in self._diary:  # Creates correct dicts / lists if new year / month
+                self._diary[str(year)] = {}
+            if str(month) not in self._diary[str(year)]:
+                self._diary[str(year)][str(month)] = []
 
-            self._entries[str(year)][str(month)].append({  # Creates a new diary entry
+            self._diary[str(year)][str(month)].append({  # Creates a new diary entry
                 "date": date,
                 "weekday": weekday,
                 "summary": summary,
@@ -463,9 +423,9 @@ class Diary:
             })
 
     def remove_string_from_summary(self, string):
-        for year in self._entries:
-            for month in self._entries[year]:
-                for entry in self._entries[year][month]:
+        for year in self._diary:
+            for month in self._diary[year]:
+                for entry in self._diary[year][month]:
                     if entry["summary"] is None or entry["summary"] == "":
                         continue
                     if string.lower() in entry["summary"].lower():
@@ -474,9 +434,9 @@ class Diary:
 
     def find_and_replace(self, find, replace):
         """Finds a string and replaces it with a new string."""
-        for year in self._entries:
-            for month in self._entries[year]:
-                for entry in self._entries[year][month]:
+        for year in self._diary:
+            for month in self._diary[year]:
+                for entry in self._diary[year][month]:
                     if entry["people"] is None:
                         continue
                     for name in entry["people"]:
