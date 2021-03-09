@@ -12,7 +12,7 @@ much-needed context to these entries.
 
 This is how the diary spreadsheet is currently structured:
 
-![The main menu](diary_data_ex.jpg)
+![Data format example](diary_data_ex.jpg)
 
 diary-assistant uses this data to calculate statistics,
 perform search operations, and help me update the spreadheet.
