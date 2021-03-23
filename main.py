@@ -1,17 +1,18 @@
 # Author: Colin Joss
-# Last date updated: 3-4-2021
+# Last date updated: 3-9-2021
 # Description: A simple python program for my personal diary system, made with the intention to
 #              speed up the process of maintaining it.
 
-import datetime
-from datetime import datetime as dt
 import os
-import inquirer
-from mutagen.mp3 import MP3
+import re
 import math
 import csv
-from pyfiglet import Figlet
 import calendar
+import inquirer
+from mutagen.mp3 import MP3
+import datetime
+from datetime import datetime as dt
+from pyfiglet import Figlet
 import pandas as pd
 
 
@@ -49,7 +50,7 @@ class Diary:
 
             # Prompts user through the diary updating process
             if selection == 'Update diary':
-                self.update_diary()
+                  self.update_diary()
 
             # Prompts user to search and returns a csv with the results
             elif selection == 'Search diary':
@@ -134,20 +135,19 @@ class Diary:
 
     def search_by_keyword(self, keyword):
         """Accepts a search keyword and returns a list of matches."""
-        # Makes every summary lower case before searching
-        summary_save = self._diary['summary']
-        self._diary['summary'] = self._diary['summary'].str.lower()
-        search_df = self._diary[self._diary['summary'].str.contains(f'{keyword.lower()}', na=False)]
+        # Searches both summary and people columns
+        df1 = self._diary[self._diary['summary'].str.contains(re.compile(keyword, re.IGNORECASE), na=False)]
+        df2 = self._diary[self._diary['people'].str.contains(re.compile(keyword, re.IGNORECASE), na=False)]
+        search_df = pd.concat([df1, df2])
 
+        # Checks if the dataframe is empty
         if search_df.empty:
             print('No results\n')
+            return False
         else:
             search_df.to_csv(f'{keyword}.csv')
             print('Search results csv successfully generated!')
-
-        # Preserves the original case
-        self._diary['summary'] = summary_save
-        return True
+            return True
 
     def update_statistics_csv(self, last_entry):
         """Automatically calculates a set of statistics from my diary and
@@ -363,84 +363,6 @@ class Diary:
                           )]
         selection = inquirer.prompt(options)
         return selection['list']
-
-    # Extra functions for top-secret highly dangerous dev use ---------------------------------
-
-    @staticmethod
-    def convert_num_to_month(num):
-        """Accepts a number between 1-12 and returns matching month, or None if no match."""
-        month_list = ["January", "February", "March", "April", "May", "June",
-                      "July", "August", "September", "October", "November", "December"]
-        if 1 <= num <= 12:
-            return month_list[int(num) - 1]
-        return None
-
-    def import_stats_from_csv(self, filepath):
-        """Takes a csv file, and if the file is formatted properly,
-        pulls requisite data to create diary entries."""
-        file = csv.reader(open(filepath))  # Opens the given file
-        rows = list(file)
-
-        for row in rows:  # Cycles through the rows, pulling data
-            date = row[0]
-            year, month, day = self.split_date(date)
-            weekday = datetime.date(year, month, day).strftime("%A")
-            month = self.convert_num_to_month(month)
-
-            summary = None
-            if row[1] != "" and row[1] is not None:
-                summary = row[1].strip()
-
-            happiness = None
-            if row[2] != "" and row[2] is not None:
-                happiness = float(row[2])
-
-            length = None
-            if row[3] != "" and row[3] is not None:
-                length = row[3]
-
-            people = []
-            try:  # Gathers list of relevant people, or handles if none
-                i = 4
-                while row[i]:
-                    people.append(str(row[i]))
-                    i += 1
-            except IndexError:
-                pass
-
-            if str(year) not in self._diary:  # Creates correct dicts / lists if new year / month
-                self._diary[str(year)] = {}
-            if str(month) not in self._diary[str(year)]:
-                self._diary[str(year)][str(month)] = []
-
-            self._diary[str(year)][str(month)].append({  # Creates a new diary entry
-                "date": date,
-                "weekday": weekday,
-                "summary": summary,
-                "happiness": happiness,
-                "people": people,
-                "length": length
-            })
-
-    def remove_string_from_summary(self, string):
-        for year in self._diary:
-            for month in self._diary[year]:
-                for entry in self._diary[year][month]:
-                    if entry["summary"] is None or entry["summary"] == "":
-                        continue
-                    if string.lower() in entry["summary"].lower():
-                        new_summary = entry["summary"].replace(string, "")
-                        entry["summary"] = new_summary
-
-    def find_and_replace(self, find, replace):
-        """Finds a string and replaces it with a new string."""
-        for year in self._diary:
-            for month in self._diary[year]:
-                for entry in self._diary[year][month]:
-                    if entry["people"] is None:
-                        continue
-                    for name in entry["people"]:
-                        name.replace(find, replace)
 
 
 if __name__ == '__main__':
