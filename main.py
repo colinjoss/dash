@@ -50,17 +50,17 @@ class Diary:
 
             # Prompts user through the diary updating process
             if selection == 'Update diary':
-                  self.update_diary()
+                self.update_diary()
 
             # Prompts user to search and returns a csv with the results
             elif selection == 'Search diary':
                 keyword = str(input('Enter a search term: '))
                 self.search_by_keyword(keyword)
-            
+
             # Generates a csv of yearly and monthly statistics
             elif selection == 'Statistics':
-                print(f'Total # of data entries:   {self.get_total_files()}')
-                print(f'Total # of recorded files: {self.get_total_entries()}')
+                print(f'Total # of data entries:   {self.get_total_entries()}')
+                print(f'Total # of recorded files: {self.get_total_files()}')
                 print(f'Total recording duration:  {self.get_total_length()} hours')
                 print('Statistics csv successfully generated!\n')
                 self.update_statistics_csv(self.get_last_date_updated())
@@ -173,7 +173,7 @@ class Diary:
             people_ranked = self.calculate_most_mentioned(current_year)
 
             # Updates the stats spreadsheet
-            v = 'w' if year == int(self.get_current_year())-1 else 'a'
+            v = 'w' if year == int(self.get_current_year()) - 1 else 'a'
             with open('statistics.csv', f'{v}', newline='') as outfile:
                 pd.DataFrame({'': year_happiness}, index=[year]).to_csv(outfile)
                 pd.DataFrame(months_ranked, index=[year]).to_csv(outfile)
