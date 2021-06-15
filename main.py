@@ -16,6 +16,10 @@ from pyfiglet import Figlet
 import pandas as pd
 
 
+MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+
 class Diary:
     def __init__(self):
         with open('diary-data.csv', 'r', newline='') as infile:
@@ -159,7 +163,7 @@ class Diary:
         current_year = int(self.get_current_year())
         total_years = []
         while current_year != 2013:
-            current_year = current_year - 1
+            current_year -= 1
             total_years.append(current_year)
 
         # Calculate key statistics for every available year
@@ -184,8 +188,7 @@ class Diary:
         """Takes the current year and returns a dictionary of the months in that
         year sorted by their happiness rating."""
         months_ranked = {}
-        for month in ['January', 'February', 'March', 'April', 'May', 'June',
-                      'July', 'August', 'September', 'October', 'November', 'December']:
+        for month in MONTHS:
             current_month = current_year.loc[current_year['month'] == month]
             month_happiness = current_month.describe()['happiness']['mean']
             months_ranked[month] = month_happiness
@@ -196,7 +199,7 @@ class Diary:
         """Takes the current year and returns a dictionary of the weekdays in that
         year sorted by their happiness rating."""
         weekdays_ranked = {}
-        for weekday in ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']:
+        for weekday in WEEKDAYS:
             current_weekday = current_year.loc[current_year['weekday'] == weekday]
             month_happiness = current_weekday.describe()['happiness']['mean']
             weekdays_ranked[weekday] = month_happiness
