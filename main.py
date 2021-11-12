@@ -23,53 +23,61 @@ class Diary:
     def __init__(self):
         with open('diary-data.csv', 'r', newline='') as infile:
             self._diary = pd.read_csv(infile)
+            self.shell()
 
     def shell(self):
-        while True:
-            print(': ')
+        status = 1
+        while status:
+            print(': ', end='')
             user_input = input()
 
-            if not type(user_input, str):
+            if not type(user_input) == str:
                 print('That is not an acceptable command. Please try again.')
                 continue
-            self.process_input(user_input)
+            status = self.process_input(user_input)
 
     def process_input(self, user_input):
+        data = self._diary.copy(deep=True)
         command = user_input.split()
 
         if command[0] == 'sd':
             if len(command) == 1:
                 print('no argument error: please include date in the form XXXX-XX-XX')
             else:
-                self.handle_sd(command[1])
+                self.handle_sd(command[1], data)
 
         elif command[0] == 'rd':
-            self.get_random_entry()
+            self.get_random_entry(data)
 
         elif command[0] == 'yr':
             if len(command) == 1:
-                # Return all data
-                pass
+                print('no argument error: please include year in form XXXX')
             else:
-                self.handle_args(command)
+                self.handle_args(command, data)
 
         elif command[0] == 'all':
             if len(command) == 1:
-                # Return all data
-                pass
+                print(data)
+            elif len(command) == 2:
+                print(data.loc[self._diary['year'] == command[1]])
             else:
-                self.handle_args(command)
+                self.handle_args(command, data)
+
+        elif command[0] == 'exit':
+            return 0
 
         else:
-            print('unknown command ', command[0], ': please try again.')
+            print('unknown command [', command[0], ']: please try again.')
 
-    def handle_sd(self, date):
+        return 1
+
+    def handle_sd(self, date, data):
         pass
 
-    def get_random_entry(self):
+    def get_random_entry(self, data):
         pass
 
-    def handle_args(self, command):
+    def handle_args(self, command, data):
         arg = command[1]
         while arg:
             if arg == '-r':
@@ -83,7 +91,7 @@ class Diary:
             elif arg == '-s':
                 pass
             else:
-                print('unknown argument ', arg, ': please try again.')
+                print('unknown argument [', arg, ']: please try again.')
                 break
 
     def handle_r(self):
