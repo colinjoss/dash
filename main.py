@@ -1,7 +1,6 @@
 # Author: Colin Joss
-# Last date updated: 3-9-2021
-# Description: A simple python program for my personal diary system, made with the intention to
-#              speed up the process of maintaining it.
+# Last date updated: 11-9-2021
+# Description: A shell-inspired interface for interacting with my digital diary.
 
 import os
 import re
@@ -24,9 +23,31 @@ class Diary:
     def __init__(self):
         with open('diary-data.csv', 'r', newline='') as infile:
             self._diary = pd.read_csv(infile)
-        self.title()
-        self.calendar()
-        self.main_menu()
+
+    def shell(self):
+        while True:
+            print(': ')
+            user_input = input()
+
+            if not type(user_input, str):
+                print('That is not an acceptable command. Please try again.')
+                continue
+            self.process_input(user_input)
+
+    def process_input(self, user_input):
+        command = user_input.split()
+
+        if command[0] == 'sd':
+            self.handle_sd(command)
+        elif command[0] == 'rd':
+            self.handle_sd(command)
+        elif command[0] == 'yr':
+            self.handle_sd(command)
+        elif command[0] == 'all':
+            self.handle_sd(command)
+        else:
+            print('That is not an acceptable command. Please try again.')
+
 
     @staticmethod
     def title():
