@@ -38,15 +38,40 @@ class Diary:
         command = user_input.split()
 
         if command[0] == 'sd':
-            self.handle_sd(command)
+            if len(command) == 1:
+                print('no argument error: please include date in the form XXXX-XX-XX')
+            else:
+                self.handle_sd(command[1])
+
         elif command[0] == 'rd':
-            self.handle_sd(command)
+            self.get_random_entry()
+
         elif command[0] == 'yr':
-            self.handle_sd(command)
+            if len(command) == 1:
+                # Return all data
+                pass
+            else:
+                self.handle_args(command)
+
         elif command[0] == 'all':
-            self.handle_sd(command)
+            if len(command) == 1:
+                # Return all data
+                pass
+            else:
+                self.handle_args(command)
+
         else:
-            print('That is not an acceptable command. Please try again.')
+            print('unknown command: please try again.')
+
+    def handle_sd(self, date):
+        pass
+
+    def get_random_entry(self):
+        pass
+
+    def handle_args(self, command):
+        for arg in command[1:]:
+            pass
 
 
     @staticmethod
