@@ -61,7 +61,7 @@ class Diary:
                 self.handle_args(command)
 
         else:
-            print('unknown command: please try again.')
+            print('unknown command ', command[0], ': please try again.')
 
     def handle_sd(self, date):
         pass
@@ -70,9 +70,36 @@ class Diary:
         pass
 
     def handle_args(self, command):
-        for arg in command[1:]:
-            pass
+        arg = command[1]
+        while arg:
+            if arg == '-r':
+                pass
+            elif arg == '-c':
+                pass
+            elif arg == '-w':
+                pass
+            elif arg == '-a':
+                pass
+            elif arg == '-s':
+                pass
+            else:
+                print('unknown argument ', arg, ': please try again.')
+                break
 
+    def handle_r(self):
+        pass
+
+    def handle_c(self):
+        pass
+
+    def handle_w(self):
+        pass
+
+    def handle_a(self):
+        pass
+
+    def handle_s(self):
+        pass
 
     @staticmethod
     def title():
