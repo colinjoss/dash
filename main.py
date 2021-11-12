@@ -52,14 +52,14 @@ class Diary:
         elif command[0] == 'yr':
             if len(command) == 1:
                 print('no argument error: please include year in form XXXX')
+            elif len(command) == 2:
+                print(data.loc[data['year'] == int(command[1])])
             else:
                 self.handle_args(command, data)
 
         elif command[0] == 'all':
             if len(command) == 1:
                 print(data)
-            elif len(command) == 2:
-                print(data.loc[self._diary['year'] == command[1]])
             else:
                 self.handle_args(command, data)
 
