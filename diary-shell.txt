@@ -1,0 +1,33 @@
+COMMANDS ----------------------------------------------------------------------
+
+sd	specific date		sd [date]
+rd	random date		rd 
+yr	specific year		yr [year]
+all	all dates		all
+
+MODIFIERS ----------------------------------------------------------------------
+
+-r	range			-r [date1] | [date2]
+-c	output columns		-o [column1,column2,...]
+-w 	with			-w [search+term+here] > [column]
+-a	average			-a [column1] (* [column2])
+-s 	sum			-s [column1] (* [column2])
+
+OPERATORS ----------------------------------------------------------------------
+
+| 	through
+>	in
+*	by
+
+EXAMPLE INPUTS -----------------------------------------------------------------
+
+-a happiness * year, month, weekday
+-a length * year, month, weekday
+-s length * year, month, weekday, people, date
+
+yr 2019 -s pizza+bank > summary -c date,happiness,people
+all -r 2017-06-01 | 2019-06-31 -a happiness			// average happiness of all dates in specified range
+all -s alaina+bash > people -a length * weekday			// average rec length of all days where alaina bash is mentioned grouped by weekday
+all -w morgan+krueger -a happiness				// average happiness of all days where morgan krueger is mentioned
+
+

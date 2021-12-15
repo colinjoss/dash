@@ -15,14 +15,16 @@ from pyfiglet import Figlet
 import pandas as pd
 
 
-MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-
-
 class Diary:
     def __init__(self):
         with open('diary-data.csv', 'r', newline='') as infile:
             self._diary = pd.read_csv(infile)
+            self.MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
+                           'October', 'November', 'December']
+            self.WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+            self.COMMANDS = {'sd': self.handle_sd, 'rd': self.handle_rd, 'yr': self.handle_yr, 'all': self.handle_all}
+            self.ARGUMENTS = {'-r': self.handle_r, '-c': self.handle_c, '-w': self.handle_w,
+                              '-a': self.handle_a, '-s': self.handle_s}
             self.shell()
 
     def shell(self):
@@ -32,82 +34,98 @@ class Diary:
             user_input = input()
 
             if not type(user_input) == str:
-                print('That is not an acceptable command. Please try again.')
+                print('bad type error: types must be a string')
                 continue
             status = self.process_input(user_input)
 
+            if status < 0:
+                pass
+
     def process_input(self, user_input):
-        data = self._diary.copy(deep=True)
         command = user_input.split()
 
-        if command[0] == 'sd':
-            if len(command) == 1:
-                print('no argument error: please include date in the form XXXX-XX-XX')
-            else:
-                self.handle_sd(command[1], data)
-
-        elif command[0] == 'rd':
-            self.get_random_entry(data)
-
-        elif command[0] == 'yr':
-            if len(command) == 1:
-                print('no argument error: please include year in form XXXX')
-            elif len(command) == 2:
-                print(data.loc[data['year'] == int(command[1])])
-            else:
-                self.handle_args(command, data)
-
-        elif command[0] == 'all':
-            if len(command) == 1:
-                print(data)
-            else:
-                self.handle_args(command, data)
-
-        elif command[0] == 'exit':
+        if command[0] == 'exit':
             return 0
 
+        if command not in self.COMMANDS:
+            return -1
+
+        return self.COMMANDS[command](command)
+
+    def handle_sd(self, command):
+        if len(command) == 1:
+            print('no argument error: please include at least one arg')
+
+        if self.convert_to_datetime(command[1], 1, command) is False:
+            print('bad argument error: first argument must be form YYYY-MM-DD')
+            return -1
+
+        if len(command) == 2:
+            return 0
+
+        self.handle_args(command)
+
+    def handle_rd(self, command):
+        if len(command) != 1:
+            print('surplus argument error: command rd takes no arguments')
+
+        # Get random entry here
+
+    def handle_yr(self, command):
+        data = self._diary.copy(deep=True)
+
+        if len(command) == 1:
+            print('no argument error: please include at least one arg')
+            return -1
+
+        if not int(command[1]):
+            print('bad argument error: first argument must be a number')
+            return -1
+
+        if len(command) == 2:
+            print(data.loc[data['year'] == int(command[1])])
+            return 0
+
+        self.handle_args(command)
+
+    def handle_all(self, command, data):
+        if len(command) == 1:
+            print(data)
         else:
-            print('unknown command [', command[0], ']: please try again.')
+            self.handle_args(command)
 
-        return 1
+    def convert_to_datetime(self, arg, i, command):
+        try:
+            date = dt.strptime(arg, '%Y-%m-%d')
+            command[i] = date
+        except ValueError:
+            return False
+        return True
 
-    def handle_sd(self, date, data):
-        pass
+    def handle_args(self, args):
+        cur_arg = args[1]
+        index = 1
+        while cur_arg:
+            index = self.ARGUMENTS[cur_arg](args, index)
+            cur_arg = args[index]
 
-    def get_random_entry(self, data):
-        pass
+    def handle_r(self, args, index):
+        while args[index+1] not in self.ARGUMENTS:
+            pass
 
-    def handle_args(self, command, data):
-        arg = command[1]
-        while arg:
-            if arg == '-r':
-                pass
-            elif arg == '-c':
-                pass
-            elif arg == '-w':
-                pass
-            elif arg == '-a':
-                pass
-            elif arg == '-s':
-                pass
-            else:
-                print('unknown argument [', arg, ']: please try again.')
-                break
+        return index
 
-    def handle_r(self):
-        pass
+    def handle_c(self, args, index):
+        return index
 
-    def handle_c(self):
-        pass
+    def handle_w(self, args, index):
+        return index
 
-    def handle_w(self):
-        pass
+    def handle_a(self, args, index):
+        return index
 
-    def handle_a(self):
-        pass
-
-    def handle_s(self):
-        pass
+    def handle_s(self, args, index):
+        return index
 
     @staticmethod
     def title():
