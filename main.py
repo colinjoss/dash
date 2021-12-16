@@ -13,6 +13,7 @@ import datetime
 from datetime import datetime as dt
 from pyfiglet import Figlet
 import pandas as pd
+import random as rand
 
 
 class Diary:
@@ -29,103 +30,222 @@ class Diary:
 
     def shell(self):
         status = 1
-        while status:
+        while status >= 0:
             print(': ', end='')
             user_input = input()
-
-            if not type(user_input) == str:
-                print('bad type error: types must be a string')
-                continue
             status = self.process_input(user_input)
-
-            if status < 0:
-                pass
 
     def process_input(self, user_input):
         command = user_input.split()
 
         if command[0] == 'exit':
-            return 0
-
-        if command not in self.COMMANDS:
             return -1
 
-        return self.COMMANDS[command](command)
+        if command[0] not in self.COMMANDS:
+            print('no command error: command does not exist')
+            return 1
+
+        return self.COMMANDS[command[0]](command)
 
     def handle_sd(self, command):
         if len(command) == 1:
             print('no argument error: please include at least one arg')
-
-        if self.convert_to_datetime(command[1], 1, command) is False:
-            print('bad argument error: first argument must be form YYYY-MM-DD')
-            return -1
+            return 1
 
         if len(command) == 2:
+            if self.check_date_format(command[1]) is False:
+                print('bad argument error: date must be form M-D-YYYY')
+                return 1
+            data = self._diary.copy(deep=True)
+            print(data.loc[data['date'] == command[1]])
             return 0
 
-        self.handle_args(command)
+        return self.handle_args(command)
 
     def handle_rd(self, command):
         if len(command) != 1:
-            print('surplus argument error: command rd takes no arguments')
+            print('bad argument error: command rd takes no arguments')
 
-        # Get random entry here
+        data = self._diary.copy(deep=True)
+        print(data.iloc[rand.randint(0, len(data.index))])
+        return 0
 
     def handle_yr(self, command):
-        data = self._diary.copy(deep=True)
-
         if len(command) == 1:
             print('no argument error: please include at least one arg')
-            return -1
+            return 1
 
-        if not int(command[1]):
+        try:
+            int(command[1])
+        except ValueError:
             print('bad argument error: first argument must be a number')
-            return -1
+            return 1
 
+        data = self._diary.copy(deep=True)
         if len(command) == 2:
             print(data.loc[data['year'] == int(command[1])])
             return 0
 
-        self.handle_args(command)
+        return self.handle_args(command)
 
-    def handle_all(self, command, data):
+    def handle_all(self, command):
+        data = self._diary.copy(deep=True)
         if len(command) == 1:
             print(data)
-        else:
-            self.handle_args(command)
+            return 0
+        return self.handle_args(command)
 
-    def convert_to_datetime(self, arg, i, command):
+    @staticmethod
+    def check_date_format(date):
         try:
-            date = dt.strptime(arg, '%Y-%m-%d')
-            command[i] = date
+            dt.strptime(date, '%m/%d/%Y')
         except ValueError:
             return False
         return True
 
     def handle_args(self, args):
-        cur_arg = args[1]
         index = 1
-        while cur_arg:
-            index = self.ARGUMENTS[cur_arg](args, index)
+        status = 0
+        data = self._diary.copy(deep=True)
+        while status == 0 and index < len(args):
             cur_arg = args[index]
+            status, index, data = self.ARGUMENTS[cur_arg](args, index, data)
+        print(data.dropna(axis=1, how='all'))
+        return status
 
-    def handle_r(self, args, index):
-        while args[index+1] not in self.ARGUMENTS:
-            pass
+    def handle_r(self, args, index, data):
+        if index+2 > len(args)-1:
+            print('missing argument error')
+            return 1
 
-        return index
+        date_1 = args[index+1]
+        if self.check_date_format(date_1) is False:
+            print('bad argument error: date must be form M-D-YYYY')
+            return 1
 
-    def handle_c(self, args, index):
-        return index
+        date_2 = args[index+2]
+        if self.check_date_format(date_2) is False:
+            print('bad argument error: date must be form M-D-YYYY')
+            return 1
 
-    def handle_w(self, args, index):
-        return index
+        # MISSING: Check that dat1 and date2 are in current dataframe (may have been reduced)
+        # MISSING: Check that date1 < date2
 
-    def handle_a(self, args, index):
-        return index
+        index1 = data.loc[data['date'] == date_1].index[0]
+        index2 = data.loc[data['date'] == date_2].index[0]
+        data = data.iloc[index1:index2+1]
 
-    def handle_s(self, args, index):
-        return index
+        index += 3
+        return 0, index, data
+
+    def handle_c(self, args, index, data):
+        if index+1 > len(args)-1:
+            print('missing argument error')
+            return 1
+
+        columns = args[index+1].split(',')
+
+        for col in columns:
+            if col not in data:
+                print('bad argument error: column name does not exist')
+                return 1
+
+        data = data[columns]
+        index += 2
+        return 0, index, data
+
+    def handle_w(self, args, index, data):
+        if self.missing_argument(index+3, args):
+            return 1
+
+        search = args[index+1].split('+')
+        search = ' '.join(search)
+
+        if self.bad_argument(index+2, args, '>'):
+            return 1
+
+        column = args[index+3]
+        if column not in data:
+            print('bad argument error: column name does not exist')
+            return 1
+
+        if index+4 <= len(args)-1:
+            if args[index+4] == '&':
+                return self.handle_w()
+
+
+
+        data = data[data[column].notna()]
+
+
+
+
+
+        try:
+            num = int(search)
+            data = data[data[column] == num]
+        except ValueError:
+            try:
+                num = float(search)
+                data = data[data[column] == num]
+            except ValueError:
+                data = data.loc[data[column].str.contains(search, case=False)]
+
+        index += 4
+
+
+        return 0, index, data
+
+    @staticmethod
+    def missing_argument(i, args):
+        if i > len(args)-1:
+            print('missing argument error: command short one argument')
+            return True
+        return False
+
+    @staticmethod
+    def bad_argument(i, args, target):
+        if args[i] != target:
+            print('bad argument error: ', args[i], ' is not ', target)
+            return True
+        return False
+
+    def column_does_not_exist(self, column, data):
+        pass
+
+    def handle_a(self, args, index, data):
+        if index+1 > len(args)-1:
+            print('missing argument error')
+            return 1
+
+        column1 = args[index+1]
+        if column1 not in data:
+            print('bad argument error: column name does not exist')
+            return 1
+
+        if index+3 <= len(args)-1:
+            if args[index+2] != '*':
+                print('bad argument error: use * operator to indicate group by column')
+                return 1
+
+            column2 = args[index+3]
+            if column2 not in data:
+                print('bad argument error: column name does not exist')
+                return 1
+
+            index += 4
+            data = data.groupby(column2, as_index=False)[column1].mean()
+            # data = data[column1].groupby(column2).mean()
+
+        else:
+            index += 2
+            data = data[column1].mean()
+
+
+        return 0, index, data
+
+    def handle_s(self, args, index, data):
+        return 0, index, data
 
     @staticmethod
     def title():
