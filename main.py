@@ -47,38 +47,37 @@ class Diary:
         if command[0] == 'exit':
             return -1
 
-        if command[0] not in self.COMMANDS:
-            print('no command error: command does not exist')
+        if self.bad_argument(command[0], self.COMMANDS, f"error: argument {command[0]} nonexistent"):
             return 1
 
         return self.COMMANDS[command[0]](command)
 
     def handle_sd(self, command):
-        if len(command) == 1:
-            print('no argument error: please include at least one arg')
+        if self.missing_argument(1, command, f"error: missing argument at 1"):
             return 1
 
         if len(command) == 2:
-            if self.check_date_format(command[1]) is False:
-                print('bad argument error: date must be form M-D-YYYY')
+            if not self.check_date_format(command[1]):
                 return 1
             data = self._diary.copy(deep=True)
-            print(data.loc[data['date'] == command[1]])
+            data = data.loc[data['date'] == command[1]]
+            print(data.dropna(axis=1, how='all'))
             return 0
 
         return self.handle_args(command)
 
     def handle_rd(self, command):
         if len(command) != 1:
-            print('bad argument error: command rd takes no arguments')
+            print('error: excessive argument at 1')
+            return 1
 
         data = self._diary.copy(deep=True)
-        print(data.iloc[rand.randint(0, len(data.index))])
+        data = data.iloc[rand.randint(0, len(data.index))]
+        print(data.dropna(how='all'))
         return 0
 
     def handle_yr(self, command):
-        if len(command) == 1:
-            print('no argument error: please include at least one arg')
+        if self.missing_argument(1, command, f"error: missing argument at 1"):
             return 1
 
         if not self.is_int(command[1]):
@@ -86,34 +85,35 @@ class Diary:
             return
 
         data = self._diary.copy(deep=True)
+        data = data.loc[data['year'] == int(command[1])]
         if len(command) == 2:
-            print(data.loc[data['year'] == int(command[1])])
+            print(data.dropna(axis=1, how='all'))
             return 0
 
-        return self.handle_args(command)
+        return self.handle_args(command, data, 2)
 
     def handle_all(self, command):
         data = self._diary.copy(deep=True)
         if len(command) == 1:
             print(data)
             return 0
-        return self.handle_args(command)
+        return self.handle_args(command, data, 1)
 
     @staticmethod
     def check_date_format(date):
         try:
-            dt.strptime(date, '%m/%d/%Y')
+            dt.strptime(date, "%m/%d/%Y")
         except ValueError:
-            print('error: bad date format')
+            print('error: date format must be m/d/yyyy')
             return False
         return True
 
-    def handle_args(self, args):
-        index = 1
+    def handle_args(self, args, data, index):
         status = 0
-        data = self._diary.copy(deep=True)
         while status == 0 and index < len(args):
             cur_arg = args[index]
+            if self.bad_argument(cur_arg, self.ARGUMENTS, f"error: argument {cur_arg} nonexistent"):
+                return 1
             status, index, data = self.ARGUMENTS[cur_arg](args, index+1, data)
         print(data.dropna(axis=1, how='all'))
         return status
@@ -158,7 +158,7 @@ class Diary:
     def handle_w_recursive(self, args, index, data):
         if self.missing_argument(index+2, args, f"error: missing argument at {index+2}"):
             return 1, None
-        if self.bad_argument(index+1, args, '>', f"error: {args[index+1]} is not >"):
+        if self.bad_operator(index+1, args, '>', f"error: operator {args[index+1]} is not >"):
             return 1, None
         if self.column_does_not_exist(args[index+2], data, f"error: column {args[index+2]} nonexistent"):
             return 1, None
@@ -177,12 +177,12 @@ class Diary:
             search_df = search_df.loc[search_df[column].str.contains(search, case=False)]
 
         if not self.missing_argument(index+3, args, None):
-            if not self.bad_argument(index+3, args, '&', None):
+            if not self.bad_operator(index+3, args, '&', None):
                 result, index = self.handle_w_recursive(args, index+4, data)
                 if not isinstance(result, pd.DataFrame):
                     return 1, None
                 search_df = pd.merge(search_df, result, on='date', how='inner')
-            elif not self.bad_argument(index+3, args, '|', None):
+            elif not self.bad_operator(index+3, args, '|', None):
                 result, index = self.handle_w_recursive(args, index+4, data)
                 if not isinstance(result, pd.DataFrame):
                     return 1, None
@@ -191,6 +191,13 @@ class Diary:
         if index is not None:
             index += 3
         return search_df, index
+    
+    @staticmethod
+    def bad_argument(arg, possible, error):
+        if arg not in possible:
+            print(error)
+            return True
+        return False
 
     @staticmethod
     def missing_argument(i, args, error):
@@ -201,7 +208,7 @@ class Diary:
         return False
 
     @staticmethod
-    def bad_argument(i, args, target, error):
+    def bad_operator(i, args, target, error):
         if args[i] != target:
             if error is not None:
                 print(error)
