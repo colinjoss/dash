@@ -16,6 +16,12 @@ import pandas as pd
 import random as rand
 
 
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+pd.set_option('display.max_colwidth', 50)
+
+
 class Diary:
     def __init__(self):
         with open('diary-data.csv', 'r', newline='') as infile:
@@ -75,11 +81,9 @@ class Diary:
             print('no argument error: please include at least one arg')
             return 1
 
-        try:
-            int(command[1])
-        except ValueError:
+        if not self.is_int(command[1]):
             print('bad argument error: first argument must be a number')
-            return 1
+            return
 
         data = self._diary.copy(deep=True)
         if len(command) == 2:
@@ -100,6 +104,7 @@ class Diary:
         try:
             dt.strptime(date, '%m/%d/%Y')
         except ValueError:
+            print('error: bad date format')
             return False
         return True
 
@@ -109,23 +114,18 @@ class Diary:
         data = self._diary.copy(deep=True)
         while status == 0 and index < len(args):
             cur_arg = args[index]
-            status, index, data = self.ARGUMENTS[cur_arg](args, index, data)
+            status, index, data = self.ARGUMENTS[cur_arg](args, index+1, data)
         print(data.dropna(axis=1, how='all'))
         return status
 
     def handle_r(self, args, index, data):
-        if index+2 > len(args)-1:
-            print('missing argument error')
+        if self.missing_argument(index+1, args, f"error: missing argument at {index+1}"):
             return 1
-
-        date_1 = args[index+1]
+        date_1 = args[index]
         if self.check_date_format(date_1) is False:
-            print('bad argument error: date must be form M-D-YYYY')
             return 1
-
-        date_2 = args[index+2]
+        date_2 = args[index+1]
         if self.check_date_format(date_2) is False:
-            print('bad argument error: date must be form M-D-YYYY')
             return 1
 
         # MISSING: Check that dat1 and date2 are in current dataframe (may have been reduced)
@@ -135,83 +135,102 @@ class Diary:
         index2 = data.loc[data['date'] == date_2].index[0]
         data = data.iloc[index1:index2+1]
 
-        index += 3
-        return 0, index, data
-
-    def handle_c(self, args, index, data):
-        if index+1 > len(args)-1:
-            print('missing argument error')
-            return 1
-
-        columns = args[index+1].split(',')
-
-        for col in columns:
-            if col not in data:
-                print('bad argument error: column name does not exist')
-                return 1
-
-        data = data[columns]
         index += 2
         return 0, index, data
 
-    def handle_w(self, args, index, data):
-        if self.missing_argument(index+3, args):
+    def handle_c(self, args, index, data):
+        if self.missing_argument(index, args, f"error: missing argument at {index}"):
             return 1
 
-        search = args[index+1].split('+')
-        search = ' '.join(search)
+        columns = args[index].split(',')
+        for col in columns:
+            if self.column_does_not_exist(col, data, f"error: column {col} nonexistent"):
+                return 1
 
-        if self.bad_argument(index+2, args, '>'):
-            return 1
-
-        column = args[index+3]
-        if column not in data:
-            print('bad argument error: column name does not exist')
-            return 1
-
-        if index+4 <= len(args)-1:
-            if args[index+4] == '&':
-                return self.handle_w()
-
-
-
-        data = data[data[column].notna()]
-
-
-
-
-
-        try:
-            num = int(search)
-            data = data[data[column] == num]
-        except ValueError:
-            try:
-                num = float(search)
-                data = data[data[column] == num]
-            except ValueError:
-                data = data.loc[data[column].str.contains(search, case=False)]
-
-        index += 4
-
-
+        data = data[columns]
+        index += 1
         return 0, index, data
 
+    def handle_w(self, args, index, data):
+        data, index = self.handle_w_recursive(args, index, data)
+        return 0, index, data
+
+    def handle_w_recursive(self, args, index, data):
+        if self.missing_argument(index+2, args, f"error: missing argument at {index+2}"):
+            return 1, None
+        if self.bad_argument(index+1, args, '>', f"error: {args[index+1]} is not >"):
+            return 1, None
+        if self.column_does_not_exist(args[index+2], data, f"error: column {args[index+2]} nonexistent"):
+            return 1, None
+
+        search = args[index].split('+')
+        search = ' '.join(search)
+        column = args[index+2]
+
+        search_df = data.copy(deep=True)
+        search_df = search_df[search_df[column].notna()]
+        if self.is_int(search):
+            search_df = search_df[search_df[column] == int(search)]
+        elif self.is_float(search):
+            search_df = search_df[search_df[column] == float(search)]
+        else:
+            search_df = search_df.loc[search_df[column].str.contains(search, case=False)]
+
+        if not self.missing_argument(index+3, args, None):
+            if not self.bad_argument(index+3, args, '&', None):
+                result, index = self.handle_w_recursive(args, index+4, data)
+                if not isinstance(result, pd.DataFrame):
+                    return 1, None
+                search_df = pd.merge(search_df, result, on='date', how='inner')
+            elif not self.bad_argument(index+3, args, '|', None):
+                result, index = self.handle_w_recursive(args, index+4, data)
+                if not isinstance(result, pd.DataFrame):
+                    return 1, None
+                search_df = pd.merge(search_df, result, on='date', how='outer')
+
+        if index is not None:
+            index += 3
+        return search_df, index
+
     @staticmethod
-    def missing_argument(i, args):
+    def missing_argument(i, args, error):
         if i > len(args)-1:
-            print('missing argument error: command short one argument')
+            if error is not None:
+                print(error)
             return True
         return False
 
     @staticmethod
-    def bad_argument(i, args, target):
+    def bad_argument(i, args, target, error):
         if args[i] != target:
-            print('bad argument error: ', args[i], ' is not ', target)
+            if error is not None:
+                print(error)
             return True
         return False
 
-    def column_does_not_exist(self, column, data):
-        pass
+    @staticmethod
+    def column_does_not_exist(column, data, error):
+        if column not in data:
+            if error is not None:
+                print(error)
+            return True
+        return False
+
+    @staticmethod
+    def is_int(search):
+        try:
+            int(search)
+            return True
+        except ValueError:
+            return False
+
+    @staticmethod
+    def is_float(search):
+        try:
+            float(search)
+            return True
+        except ValueError:
+            return False
 
     def handle_a(self, args, index, data):
         if index+1 > len(args)-1:
@@ -407,7 +426,7 @@ class Diary:
         """Takes the current year and returns a dictionary of the months in that
         year sorted by their happiness rating."""
         months_ranked = {}
-        for month in MONTHS:
+        for month in self.MONTHS:
             current_month = current_year.loc[current_year['month'] == month]
             month_happiness = current_month.describe()['happiness']['mean']
             months_ranked[month] = month_happiness
@@ -418,7 +437,7 @@ class Diary:
         """Takes the current year and returns a dictionary of the weekdays in that
         year sorted by their happiness rating."""
         weekdays_ranked = {}
-        for weekday in WEEKDAYS:
+        for weekday in self.WEEKDAYS:
             current_weekday = current_year.loc[current_year['weekday'] == weekday]
             month_happiness = current_weekday.describe()['happiness']['mean']
             weekdays_ranked[weekday] = month_happiness
