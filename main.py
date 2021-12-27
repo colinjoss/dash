@@ -196,27 +196,73 @@ class Diary:
         if self.column_does_not_exist(args[index], data, f"error: column {args[index]} nonexistent"):
             return 1, None
 
-        if args[index] == 'duration':
-            data['duration'].apply(self.convert_dur_to_dt)
+        column1 = args[index]
+        if column1 == 'happiness':
+            if index + 1 < len(args) and args[index + 1] == '*':
+                if self.missing_argument(index + 2, args, f"error: missing argument at {index}"):
+                    return 1, None
+                if self.column_does_not_exist(args[index + 2], data, f"error: column {args[index]} nonexistent"):
+                    return 1, None
+                column2 = args[index + 2]
+                data = data.groupby(column2, as_index=False)[column1].mean()
+                index += 3
+            else:
+                data = data[column1].mean()
+                index += 1
+        else:
+            print(f"error: {column1} does not support -a")
+            return 1, None
 
-        if args[index] != 'happiness' and args[index] != 'length':
-            print('error: column cannot be averaged')
+        return 0, index, data
+
+    def handle_s(self, args, index, data):
+        if self.missing_argument(index, args, f"error: missing argument at {index}"):
+            return 1, None
+        if self.column_does_not_exist(args[index], data, f"error: column {args[index]} nonexistent"):
             return 1, None
 
         column1 = args[index]
-        if index+1 < len(args) and args[index+1] == '*':
-            if self.missing_argument(index+2, args, f"error: missing argument at {index}"):
-                return 1, None
-            if self.column_does_not_exist(args[index+2], data, f"error: column {args[index]} nonexistent"):
-                return 1, None
-            column2 = args[index+2]
-            data = data.groupby(column2, as_index=False)[column1].mean()
-            index += 3
-        else:
-            data = data[column1].mean()
+        if column1 == 'happiness':
+            if index + 1 < len(args) and args[index + 1] == '*':
+                data = self.group_by(data, index, args, column1, 'sum')
+                index += 3
+            else:
+                data = data[column1].sum()
+                index += 1
+        elif column1 == 'duration':
+            data = self.sum_duration(data)
             index += 1
+            if index + 1 < len(args) and args[index + 1] == '*':
+                print(f"error: {column1} does not support *")
+                return 1, None
+        else:
+            print(f"error: {column1} does not support -s")
+            return 1, None
 
         return 0, index, data
+
+    def group_by(self, data, index, args, column1, action):
+        if self.missing_argument(index+2, args, f"error: missing argument at {index}"):
+            return 1, None
+        if self.column_does_not_exist(args[index + 2], data, f"error: column {args[index]} nonexistent"):
+            return 1, None
+        column2 = args[index+2]
+
+        if action == 'mean':
+            data = data.groupby(column2, as_index=False)[column1].mean()
+        elif action == 'sum':
+            data = data.groupby(column2, as_index=False)[column1].sum()
+
+        return data
+
+    def sum_duration(self, data):
+        duration_sum = datetime.timedelta(hours=0, minutes=0, seconds=0)
+        for item in data['duration'].dropna().tolist():
+            hms = item.split(':')
+            if self.is_int(hms[0]) and self.is_int(hms[1]) and self.is_int(hms[2]):
+                time_obj = datetime.timedelta(hours=int(hms[0]), minutes=int(hms[1]), seconds=int(hms[2]))
+                duration_sum += time_obj
+        return duration_sum
 
     @staticmethod
     def convert_dur_to_dt(x):
@@ -236,18 +282,6 @@ class Diary:
             duration_sum += time_obj
 
         return duration_sum
-
-    def handle_s(self, args, index, data):
-        if self.missing_argument(index, args, f"error: missing argument at {index}"):
-            return 1, None
-        if self.column_does_not_exist(args[index], data, f"error: column {args[index]} nonexistent"):
-            return 1, None
-        if args[index] != 'happiness' and args[index] != 'duration':
-            print('error: column cannot be summed')
-            return 1, None
-
-        column1 = args[index]
-        return 0, index+1, data[column1].sum()
 
     @staticmethod
     def check_date_format(date):
