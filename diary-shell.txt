@@ -1,29 +1,26 @@
 COMMANDS ----------------------------------------------------------------------
 
-sd	specific date		sd [date]
-rd	random date		rd 
-yr	specific year		yr [year]
-all	all dates		all
+sd	        specific date		sd [date]
+rd	        random date		    rd
+yr	        specific year		yr [year]
+all	        all dates		    all
 
-MODIFIERS ----------------------------------------------------------------------
+ARGUMENTS ----------------------------------------------------------------------
 
--r	reduce			-r [date1] | [date2]
--c	output columns		-o [column1,column2,...]
--w 	with			-w [search+term+here] > [column]
--a	average			-a [column1] (* [column2])
--s 	sum			-s [column1] (* [column2])
+-r	        reduce			    -r [date1] [date2]
+-c	        output columns		-c [column1,column2,...]
+-w  	    with			    -w [search+term+here] [column]
+-a	        average			    -a [column1] *
+-s 	        sum			        -s [column1] *
 
-OPERATORS ----------------------------------------------------------------------
+FUNCTIONS ----------------------------------------------------------------------
 
-| 	through
->	in
-*	by
+count()
+group()
 
 EXAMPLE INPUTS -----------------------------------------------------------------
 
--a happiness * year, month, weekday
--a length * year, month, weekday
--s length * year, month, weekday, people, date
+all group(count(-w morgan+krueger people), )
 
 yr 2019 -s pizza+bank > summary -c date,happiness,people
 all -r 2017-06-01 | 2019-06-31 -a happiness			// average happiness of all dates in specified range

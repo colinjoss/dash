@@ -46,25 +46,23 @@ class Diary:
 
         if command[0] == 'exit':
             return -1
-
         if self.bad_argument(command[0], self.COMMANDS, f"error: argument {command[0]} nonexistent"):
             return 1
-
         return self.COMMANDS[command[0]](command)
 
     def handle_sd(self, command):
         if self.missing_argument(1, command, f"error: missing argument at 1"):
             return 1
 
+        data = self._diary.copy(deep=True)
+        data = data.loc[data['date'] == command[1]]
         if len(command) == 2:
             if not self.check_date_format(command[1]):
                 return 1
-            data = self._diary.copy(deep=True)
-            data = data.loc[data['date'] == command[1]]
             print(data.dropna(axis=1, how='all'))
             return 0
 
-        return self.handle_args(command)
+        return self.handle_args(command, data, 2)
 
     def handle_rd(self, command):
         if len(command) != 1:
@@ -95,18 +93,9 @@ class Diary:
     def handle_all(self, command):
         data = self._diary.copy(deep=True)
         if len(command) == 1:
-            print(data)
+            print(data.loc[:, ~data.columns.str.contains('^Unnamed')])
             return 0
         return self.handle_args(command, data, 1)
-
-    @staticmethod
-    def check_date_format(date):
-        try:
-            dt.strptime(date, "%m/%d/%Y")
-        except ValueError:
-            print('error: date format must be m/d/yyyy')
-            return False
-        return True
 
     def handle_args(self, args, data, index):
         status = 0
@@ -114,8 +103,18 @@ class Diary:
             cur_arg = args[index]
             if self.bad_argument(cur_arg, self.ARGUMENTS, f"error: argument {cur_arg} nonexistent"):
                 return 1
+
             status, index, data = self.ARGUMENTS[cur_arg](args, index+1, data)
-        print(data.dropna(axis=1, how='all'))
+
+            if isinstance(data, int) and index < len(args):
+                print('error: -a or -s must be last argument')
+                return 1
+
+        if isinstance(data, pd.DataFrame):
+            print(data.loc[:, ~data.columns.str.contains('^Unnamed')])
+        else:
+            print(data)
+
         return status
 
     def handle_r(self, args, index, data):
@@ -181,16 +180,78 @@ class Diary:
                 result, index = self.handle_w_recursive(args, index+4, data)
                 if not isinstance(result, pd.DataFrame):
                     return 1, None
-                search_df = pd.merge(search_df, result, on='date', how='inner')
+                search_df = search_df.loc[:, ~data.columns.str.contains('^Unnamed')]
+                result = result.loc[:, ~data.columns.str.contains('^Unnamed')]
+                search_df = pd.merge(search_df, result, how='inner',
+                                     on=['date', 'year', 'month', 'weekday', 'summary',
+                                         'happiness', 'duration', 'people']).drop_duplicates()
             elif not self.bad_operator(index+3, args, '|', None):
                 result, index = self.handle_w_recursive(args, index+4, data)
                 if not isinstance(result, pd.DataFrame):
                     return 1, None
-                search_df = pd.merge(search_df, result, on='date', how='outer')
+                search_df = search_df.loc[:, ~data.columns.str.contains('^Unnamed')]
+                result = result.loc[:, ~data.columns.str.contains('^Unnamed')]
+                search_df = pd.concat([search_df, result]).drop_duplicates()
 
         if index is not None:
             index += 3
         return search_df, index
+
+    def handle_a(self, args, index, data):
+        if self.missing_argument(index, args, f"error: missing argument at {index}"):
+            return 1, None
+        if self.column_does_not_exist(args[index], data, f"error: column {args[index]} nonexistent"):
+            return 1, None
+
+        if args[index] == 'duration':
+            data['duration'].apply(self.convert_dur_to_dt)
+
+        if args[index] != 'happiness' and args[index] != 'length':
+            print('error: column cannot be averaged')
+            return 1, None
+
+        column1 = args[index]
+        return 0, index+1, data[column1].mean()
+
+    @staticmethod
+    def convert_dur_to_dt(x):
+        print(x)
+        hms = x.split(':')
+        return datetime.timedelta(hours=int(hms[0]), minutes=int(hms[1]), seconds=int(hms[2]))
+
+    def get_total_length(self):
+        """Calculates the sum total amount of recording time."""
+        duration_df = self._diary['duration'].dropna()
+        duration_sum = datetime.timedelta(hours=0, minutes=0, seconds=0)
+        for duration in duration_df.tolist():
+            if duration == ' ':
+                continue
+            hms = duration.split(':')
+            time_obj = datetime.timedelta(hours=int(hms[0]), minutes=int(hms[1]), seconds=int(hms[2]))
+            duration_sum += time_obj
+
+        return duration_sum
+
+    def handle_s(self, args, index, data):
+        if self.missing_argument(index, args, f"error: missing argument at {index}"):
+            return 1, None
+        if self.column_does_not_exist(args[index], data, f"error: column {args[index]} nonexistent"):
+            return 1, None
+        if args[index] != 'happiness' and args[index] != 'duration':
+            print('error: column cannot be summed')
+            return 1, None
+
+        column1 = args[index]
+        return 0, index+1, data[column1].sum()
+
+    @staticmethod
+    def check_date_format(date):
+        try:
+            dt.strptime(date, "%m/%d/%Y")
+        except ValueError:
+            print('error: date format must be m/d/yyyy')
+            return False
+        return True
     
     @staticmethod
     def bad_argument(arg, possible, error):
@@ -238,40 +299,6 @@ class Diary:
             return True
         except ValueError:
             return False
-
-    def handle_a(self, args, index, data):
-        if index+1 > len(args)-1:
-            print('missing argument error')
-            return 1
-
-        column1 = args[index+1]
-        if column1 not in data:
-            print('bad argument error: column name does not exist')
-            return 1
-
-        if index+3 <= len(args)-1:
-            if args[index+2] != '*':
-                print('bad argument error: use * operator to indicate group by column')
-                return 1
-
-            column2 = args[index+3]
-            if column2 not in data:
-                print('bad argument error: column name does not exist')
-                return 1
-
-            index += 4
-            data = data.groupby(column2, as_index=False)[column1].mean()
-            # data = data[column1].groupby(column2).mean()
-
-        else:
-            index += 2
-            data = data[column1].mean()
-
-
-        return 0, index, data
-
-    def handle_s(self, args, index, data):
-        return 0, index, data
 
     @staticmethod
     def title():
@@ -505,19 +532,6 @@ class Diary:
         """Returns the total number of user-submitted files."""
         duration_df = self._diary['duration'].dropna()
         return len(duration_df)
-
-    def get_total_length(self):
-        """Calculates the sum total amount of recording time."""
-        duration_df = self._diary['duration'].dropna()
-        duration_sum = datetime.timedelta(hours=0, minutes=0, seconds=0)
-        for duration in duration_df.tolist():
-            if duration == ' ':
-                continue
-            hms = duration.split(':')
-            time_obj = datetime.timedelta(hours=int(hms[0]), minutes=int(hms[1]), seconds=int(hms[2]))
-            duration_sum += time_obj
-
-        return duration_sum
 
     def get_mp3_file_length(self):
         """Prompts user to select an mp3 file and returns the length of
