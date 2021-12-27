@@ -30,7 +30,7 @@ class Diary:
                            'October', 'November', 'December']
             self.WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
             self.COMMANDS = {'sd': self.handle_sd, 'rd': self.handle_rd, 'yr': self.handle_yr, 'all': self.handle_all}
-            self.ARGUMENTS = {'-r': self.handle_r, '-c': self.handle_c, '-w': self.handle_w,
+            self.ARGUMENTS = {'-r': self.handle_r, '-o': self.handle_c, '-w': self.handle_w,
                               '-a': self.handle_a, '-s': self.handle_s}
             self.shell()
 
@@ -187,7 +187,7 @@ class Diary:
                     return 1, None
                 search_df = pd.concat([search_df, result]).drop_duplicates()
                 index += 3
-        print(search_df)
+
         return search_df, index
 
     def handle_a(self, args, index, data):
@@ -204,7 +204,19 @@ class Diary:
             return 1, None
 
         column1 = args[index]
-        return 0, index+1, data[column1].mean()
+        if index+1 < len(args) and args[index+1] == '*':
+            if self.missing_argument(index+2, args, f"error: missing argument at {index}"):
+                return 1, None
+            if self.column_does_not_exist(args[index+2], data, f"error: column {args[index]} nonexistent"):
+                return 1, None
+            column2 = args[index+2]
+            data = data.groupby(column2, as_index=False)[column1].mean()
+            index += 3
+        else:
+            data = data[column1].mean()
+            index += 1
+
+        return 0, index, data
 
     @staticmethod
     def convert_dur_to_dt(x):
@@ -283,6 +295,8 @@ class Diary:
             int(search)
             return True
         except ValueError:
+            return False
+        except TypeError:
             return False
 
     @staticmethod
