@@ -29,11 +29,21 @@ class Diary:
             self.MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
                            'October', 'November', 'December']
             self.WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-            self.COMMANDS = {'sd': self.handle_sd, 'rd': self.handle_rd, 'yr': self.handle_yr, 'all': self.handle_all}
-            self.ARGUMENTS = {'-r': self.handle_r, '-o': self.handle_c, '-w': self.handle_w,
-                              '-a': self.handle_a, '-s': self.handle_s}
+            self.COMMANDS = {'sd': self.specific_date, 'rd': self.random_date, 'yr': self.year_dates,
+                             'all': self.all_dates}
+            self.ARGUMENTS = {'-r': self.reduce, '-o': self.output_format, '-w': self.with_term,
+                              '-a': self.average, '-s': self.sum}
             self.title()
             self.shell()
+
+    @staticmethod
+    def title():
+        """Displays the title of the program."""
+        custom_fig = Figlet()
+        print(custom_fig.renderText('DIARY SHELL'))
+        print('Program by Colin Joss')
+        print('*** input command \'help\' for list of commands and arguments')
+        print('-------------------------------------------------------------\n')
 
     def shell(self):
         status = 1
@@ -50,11 +60,40 @@ class Diary:
             return 1
         if command[0] == 'exit':
             return -1
+        if command[0] == 'help':
+            self.help()
+            return 0
         if self.bad_argument(command[0], self.COMMANDS, f"error: argument {command[0]} nonexistent"):
             return 1
         return self.COMMANDS[command[0]](command)
 
-    def handle_sd(self, command):
+    @staticmethod
+    def help():
+        print('KEY')
+        print('-----------------------------------------------------------------')
+        print('[] replace with indicated input')
+        print('() optional')
+        print('>  search in')
+        print('*  group by')
+        print('')
+        print('COMMANDS')
+        print('command      action              usage')
+        print('-----------------------------------------------------------------')
+        print('sd           get specific date   sd [M/D/YYYY]')
+        print('rd           get random date     rd [M/D/YYYY]')
+        print('yr           get year dates      yr [YYYY]')
+        print('all          get all dates       all')
+        print('')
+        print('ARGUMENTS')
+        print('argument     action              usage')
+        print('-----------------------------------------------------------------')
+        print('-r           reduce date range   -r [M/D/YYYY] [M/D/YYYY]')
+        print('-o           output format       -o [column1, column2, ...]')
+        print('-w           with search term    -w [search+term+here] > [column]')
+        print('-a           average numbers     -a [column1] (* [column2])')
+        print('-s           sum numbers         -s [column1] (* [column2])')
+
+    def specific_date(self, command):
         if self.missing_argument(1, command, f"error: missing argument at 1"):
             return 1
 
@@ -67,9 +106,9 @@ class Diary:
             print(data.dropna(axis=1, how='all'))
             return 0
 
-        return self.handle_args(command, data, 2)
+        return self.args(command, data, 2)
 
-    def handle_rd(self, command):
+    def random_date(self, command):
         if len(command) != 1:
             print('error: excessive argument at 1')
             return 1
@@ -80,7 +119,7 @@ class Diary:
         print(data.dropna(how='all'))
         return 0
 
-    def handle_yr(self, command):
+    def year_dates(self, command):
         if self.missing_argument(1, command, f"error: missing argument at 1"):
             return 1
 
@@ -95,9 +134,9 @@ class Diary:
             print(data.dropna(axis=1, how='all'))
             return 0
 
-        return self.handle_args(command, data, 2)
+        return self.args(command, data, 2)
 
-    def handle_all(self, command):
+    def all_dates(self, command):
         data = self._diary.copy(deep=True)
         data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
         if len(command) == 1:
@@ -123,7 +162,7 @@ class Diary:
             print(data)
         return status
 
-    def handle_r(self, args, index, data):
+    def reduce(self, args, index, data):
         if self.missing_argument(index+1, args, f"error: missing argument at {index+1}"):
             return 1, None, None
         date_1 = args[index]
@@ -143,7 +182,7 @@ class Diary:
         index += 2
         return 0, index, data
 
-    def handle_c(self, args, index, data):
+    def output_format(self, args, index, data):
         if self.missing_argument(index, args, f"error: missing argument at {index}"):
             return 1, None, None
 
@@ -156,11 +195,11 @@ class Diary:
         index += 1
         return 0, index, data
 
-    def handle_w(self, args, index, data):
+    def with_term(self, args, index, data):
         status, index, data = self.handle_w_recursive(args, index, data)
         return status, index, data
 
-    def handle_w_recursive(self, args, index, data):
+    def with_term_recursive(self, args, index, data):
         if self.missing_argument(index+2, args, f"error: missing argument at {index+2}"):
             return 1, None, None
         if self.bad_operator(index+1, args, '>', f"error: operator {args[index+1]} is not >"):
@@ -184,7 +223,7 @@ class Diary:
 
         if not self.missing_argument(index+3, args, None):
             if not self.bad_operator(index+3, args, '&', None):
-                status, index, result = self.handle_w_recursive(args, index+4, data)
+                status, index, result = self.with_term_recursive(args, index+4, data)
                 if status == 1:
                     return 1, None, None
                 search_df = pd.merge(search_df, result, how='inner',
@@ -192,7 +231,7 @@ class Diary:
                                          'happiness', 'duration', 'people']).drop_duplicates()
                 index += 3
             elif not self.bad_operator(index+3, args, '|', None):
-                status, index, result = self.handle_w_recursive(args, index+4, data)
+                status, index, result = self.with_term_recursive(args, index+4, data)
                 if status == 1:
                     return 1, None, None
                 search_df = pd.concat([search_df, result]).drop_duplicates()
@@ -202,7 +241,7 @@ class Diary:
 
         return status, index, search_df
 
-    def handle_a(self, args, index, data):
+    def average(self, args, index, data):
         if self.missing_argument(index, args, f"error: missing argument at {index}"):
             return 1, None, None
         if self.column_does_not_exist(args[index], data, f"error: column {args[index]} nonexistent"):
@@ -222,7 +261,7 @@ class Diary:
 
         return 0, index, data
 
-    def handle_s(self, args, index, data):
+    def sum(self, args, index, data):
         if self.missing_argument(index, args, f"error: missing argument at {index}"):
             return 1, None, None
         if self.column_does_not_exist(args[index], data, f"error: column {args[index]} nonexistent"):
@@ -343,14 +382,6 @@ class Diary:
             return True
         except ValueError:
             return False
-
-    @staticmethod
-    def title():
-        """Displays the title of the program."""
-        custom_fig = Figlet()
-        print(custom_fig.renderText('DIARY SHELL'))
-        print("Program by Colin Joss")
-        print("-------------------------------------------------------------\n")
 
     @staticmethod
     def calendar():

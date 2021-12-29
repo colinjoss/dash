@@ -12,7 +12,6 @@ ARGUMENTS ----------------------------------------------------------------------
 -w  	    with			    -w [search+term+here] [column]
 -a	        average			    -a [column1] (* [weekday,month,year])
 -s 	        sum			        -s [column1] (* [column2])
--c          count               -c
 
 FUNCTIONS ----------------------------------------------------------------------
 
