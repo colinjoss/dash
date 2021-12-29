@@ -32,6 +32,7 @@ class Diary:
             self.COMMANDS = {'sd': self.handle_sd, 'rd': self.handle_rd, 'yr': self.handle_yr, 'all': self.handle_all}
             self.ARGUMENTS = {'-r': self.handle_r, '-o': self.handle_c, '-w': self.handle_w,
                               '-a': self.handle_a, '-s': self.handle_s}
+            self.title()
             self.shell()
 
     def shell(self):
@@ -44,6 +45,9 @@ class Diary:
     def process_input(self, user_input):
         command = user_input.split()
 
+        if len(command) < 1:
+            print('error: no command inputted')
+            return 1
         if command[0] == 'exit':
             return -1
         if self.bad_argument(command[0], self.COMMANDS, f"error: argument {command[0]} nonexistent"):
@@ -103,26 +107,31 @@ class Diary:
 
     def handle_args(self, args, data, index):
         status = 0
-        while status == 0 and index < len(args):
+        while index < len(args):
             cur_arg = args[index]
             if self.bad_argument(cur_arg, self.ARGUMENTS, f"error: argument {cur_arg} nonexistent"):
-                return 1
+                status = 1
+                return status
             status, index, data = self.ARGUMENTS[cur_arg](args, index+1, data)
+            if status == 1:
+                return status
             if self.is_int(data) and index < len(args):
                 print('error: -a or -s must be last argument')
-                return 1
-        print(data)
+                return status
+
+        if data is not None:
+            print(data)
         return status
 
     def handle_r(self, args, index, data):
         if self.missing_argument(index+1, args, f"error: missing argument at {index+1}"):
-            return 1
+            return 1, None, None
         date_1 = args[index]
         if self.check_date_format(date_1) is False:
-            return 1
+            return 1, None, None
         date_2 = args[index+1]
         if self.check_date_format(date_2) is False:
-            return 1
+            return 1, None, None
 
         # MISSING: Check that dat1 and date2 are in current dataframe (may have been reduced)
         # MISSING: Check that date1 < date2
@@ -136,32 +145,33 @@ class Diary:
 
     def handle_c(self, args, index, data):
         if self.missing_argument(index, args, f"error: missing argument at {index}"):
-            return 1
+            return 1, None, None
 
         columns = args[index].split(',')
         for col in columns:
             if self.column_does_not_exist(col, data, f"error: column {col} nonexistent"):
-                return 1
+                return 1, None, None
 
         data = data[columns]
         index += 1
         return 0, index, data
 
     def handle_w(self, args, index, data):
-        data, index = self.handle_w_recursive(args, index, data)
-        return 0, index, data
+        status, index, data = self.handle_w_recursive(args, index, data)
+        return status, index, data
 
     def handle_w_recursive(self, args, index, data):
         if self.missing_argument(index+2, args, f"error: missing argument at {index+2}"):
-            return 1, None
+            return 1, None, None
         if self.bad_operator(index+1, args, '>', f"error: operator {args[index+1]} is not >"):
-            return 1, None
+            return 1, None, None
         if self.column_does_not_exist(args[index+2], data, f"error: column {args[index+2]} nonexistent"):
-            return 1, None
+            return 1, None, None
 
         search = args[index].split('+')
         search = ' '.join(search)
         column = args[index+2]
+        status = 0
 
         search_df = data.copy(deep=True)
         search_df = search_df[search_df[column].notna()]
@@ -174,52 +184,49 @@ class Diary:
 
         if not self.missing_argument(index+3, args, None):
             if not self.bad_operator(index+3, args, '&', None):
-                result, index = self.handle_w_recursive(args, index+4, data)
-                if not isinstance(result, pd.DataFrame):
-                    return 1, None
+                status, index, result = self.handle_w_recursive(args, index+4, data)
+                if status == 1:
+                    return 1, None, None
                 search_df = pd.merge(search_df, result, how='inner',
                                      on=['date', 'year', 'month', 'weekday', 'summary',
                                          'happiness', 'duration', 'people']).drop_duplicates()
                 index += 3
             elif not self.bad_operator(index+3, args, '|', None):
-                result, index = self.handle_w_recursive(args, index+4, data)
-                if not isinstance(result, pd.DataFrame):
-                    return 1, None
+                status, index, result = self.handle_w_recursive(args, index+4, data)
+                if status == 1:
+                    return 1, None, None
                 search_df = pd.concat([search_df, result]).drop_duplicates()
                 index += 3
+        else:
+            index += 3
 
-        return search_df, index
+        return status, index, search_df
 
     def handle_a(self, args, index, data):
         if self.missing_argument(index, args, f"error: missing argument at {index}"):
-            return 1, None
+            return 1, None, None
         if self.column_does_not_exist(args[index], data, f"error: column {args[index]} nonexistent"):
-            return 1, None
+            return 1, None, None
 
         column1 = args[index]
         if column1 == 'happiness':
             if index + 1 < len(args) and args[index + 1] == '*':
-                if self.missing_argument(index + 2, args, f"error: missing argument at {index}"):
-                    return 1, None
-                if self.column_does_not_exist(args[index + 2], data, f"error: column {args[index]} nonexistent"):
-                    return 1, None
-                column2 = args[index + 2]
-                data = data.groupby(column2, as_index=False)[column1].mean()
+                data = self.group_by(data, index, args, column1, 'mean')
                 index += 3
             else:
                 data = data[column1].mean()
                 index += 1
         else:
             print(f"error: {column1} does not support -a")
-            return 1, None
+            return 1, None, None
 
         return 0, index, data
 
     def handle_s(self, args, index, data):
         if self.missing_argument(index, args, f"error: missing argument at {index}"):
-            return 1, None
+            return 1, None, None
         if self.column_does_not_exist(args[index], data, f"error: column {args[index]} nonexistent"):
-            return 1, None
+            return 1, None, None
 
         column1 = args[index]
         if column1 == 'happiness':
@@ -229,23 +236,25 @@ class Diary:
             else:
                 data = data[column1].sum()
                 index += 1
+
         elif column1 == 'duration':
             data = self.sum_duration(data)
             index += 1
             if index + 1 < len(args) and args[index + 1] == '*':
                 print(f"error: {column1} does not support *")
-                return 1, None
+                return 1, None, None
+
         else:
             print(f"error: {column1} does not support -s")
-            return 1, None
+            return 1, None, None
 
         return 0, index, data
 
     def group_by(self, data, index, args, column1, action):
         if self.missing_argument(index+2, args, f"error: missing argument at {index}"):
-            return 1, None
-        if self.column_does_not_exist(args[index + 2], data, f"error: column {args[index]} nonexistent"):
-            return 1, None
+            return 1, None, None
+        if self.column_does_not_exist(args[index+2], data, f"error: column {args[index+2]} nonexistent"):
+            return 1, None, None
         column2 = args[index+2]
 
         if action == 'mean':
@@ -263,12 +272,6 @@ class Diary:
                 time_obj = datetime.timedelta(hours=int(hms[0]), minutes=int(hms[1]), seconds=int(hms[2]))
                 duration_sum += time_obj
         return duration_sum
-
-    @staticmethod
-    def convert_dur_to_dt(x):
-        print(x)
-        hms = x.split(':')
-        return datetime.timedelta(hours=int(hms[0]), minutes=int(hms[1]), seconds=int(hms[2]))
 
     def get_total_length(self):
         """Calculates the sum total amount of recording time."""
@@ -344,10 +347,10 @@ class Diary:
     @staticmethod
     def title():
         """Displays the title of the program."""
-        custom_fig = Figlet(font='slant')
-        print(custom_fig.renderText('AUTO - DIARY'))
+        custom_fig = Figlet()
+        print(custom_fig.renderText('DIARY SHELL'))
         print("Program by Colin Joss")
-        print("-----------------------------------------\n")
+        print("-------------------------------------------------------------\n")
 
     @staticmethod
     def calendar():
