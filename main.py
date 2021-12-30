@@ -40,7 +40,8 @@ class Diary:
     def title():
         """Displays the title of the program."""
         custom_fig = Figlet()
-        print(custom_fig.renderText('DIARY SHELL'))
+        print(custom_fig.renderText('DASH'))
+        print('Dash version 2.0')
         print('Program by Colin Joss')
         print('*** input command \'help\' for list of commands and arguments')
         print('-------------------------------------------------------------\n')
@@ -134,7 +135,7 @@ class Diary:
             print(data.dropna(axis=1, how='all'))
             return 0
 
-        return self.args(command, data, 2)
+        return self.handle_args(command, data, 2)
 
     def all_dates(self, command):
         data = self._diary.copy(deep=True)
@@ -196,7 +197,7 @@ class Diary:
         return 0, index, data
 
     def with_term(self, args, index, data):
-        status, index, data = self.handle_w_recursive(args, index, data)
+        status, index, data = self.with_term_recursive(args, index, data)
         return status, index, data
 
     def with_term_recursive(self, args, index, data):
@@ -229,13 +230,12 @@ class Diary:
                 search_df = pd.merge(search_df, result, how='inner',
                                      on=['date', 'year', 'month', 'weekday', 'summary',
                                          'happiness', 'duration', 'people']).drop_duplicates()
-                index += 3
             elif not self.bad_operator(index+3, args, '|', None):
                 status, index, result = self.with_term_recursive(args, index+4, data)
                 if status == 1:
                     return 1, None, None
                 search_df = pd.concat([search_df, result]).drop_duplicates()
-                index += 3
+            index += 3
         else:
             index += 3
 
@@ -301,7 +301,7 @@ class Diary:
         elif action == 'sum':
             data = data.groupby(column2, as_index=False)[column1].sum()
 
-        return data
+        return data.sort_values(by=[column1], ascending=False)
 
     def sum_duration(self, data):
         duration_sum = datetime.timedelta(hours=0, minutes=0, seconds=0)

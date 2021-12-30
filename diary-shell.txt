@@ -13,11 +13,6 @@ ARGUMENTS ----------------------------------------------------------------------
 -a	        average			    -a [column1] (* [weekday,month,year])
 -s 	        sum			        -s [column1] (* [column2])
 
-FUNCTIONS ----------------------------------------------------------------------
-
-count()
-group()
-
 EXAMPLE INPUTS -----------------------------------------------------------------
 
 yr 2019 -s pizza+bank > summary -c date,happiness,people

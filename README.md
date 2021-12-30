@@ -1,22 +1,40 @@
-# diary-assistant
+# dash
 
-diary-assistant is a program that facilitates the maintenance of my
-personal diary.
+DASH is a shell-like program that facilitates the maintenance 
+of my personal diary. The name is a portmanteau of diary and
+bash.
 
-![The main menu](diary_assisant.jpg)
+![Example input](dash.JPG)
 
-Since I was 16, I've journaled my life through MP3 voice 
-recordings and an accompanying spreadsheet of life data. Each
-recording is a diary entry, and the spreadsheet provides 
-much-needed context to these entries.
+Starting from age 16, I've journaled my life through regular 
+MP3 voice recordings and an accompanying spreadsheet of life 
+data. Each recording is a diary entry, and the spreadsheet 
+provides much-needed context for these entries. Information
+tracked in the spreadsheet includes things like a brief
+summary of each day, a list of relevant people to each day,
+ and a happiness index.
 
-This is how the diary spreadsheet is currently structured:
+I am fast approaching 10 years of data about my own life.
+As a computer science student, I sought to facilitate how 
+I interact with this data by constructing a shell-like 
+program that allows a set of custom commands and arguments 
+to access and display my data.
 
-![Data format example](diary_data_ex.jpg)
+## Usage
 
-diary-assistant uses this data to calculate statistics,
-perform search operations, and help me update the spreadheet.
-I can also just modify the spreadsheet directly.
+COMMANDS
+
+|  | sd | rd | yr | all |
+| --- | --- | --- | --- |--- |
+| action | get specific date | get random date | get specific year | get all dates |
+| example | sd M/D/YYYY | rd | yr YYYY | all |
+
+ARGUMENTS
+
+|  | -r | -o | -w | -a | -s |
+| --- | --- | --- | --- |--- | --- |
+| action | reduce | output format | with search term | average | sum |
+| example | -r M/D/YYYY M/D/YYYY | -o column1,column2,... | -w search+terms+here > column | -a column (* column) | -s column (* column) |
 
 ## Technologies
 
