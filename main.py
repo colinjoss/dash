@@ -2,13 +2,6 @@
 # Last date updated: 12-29-2021
 # Description: A shell-inspired interface for interacting with my digital diary.
 
-import os
-import re
-import math
-import csv
-import calendar
-import inquirer
-from mutagen.mp3 import MP3
 import datetime
 from datetime import datetime as dt
 from pyfiglet import Figlet
@@ -24,17 +17,14 @@ pd.set_option('display.max_colwidth', 50)
 
 class Diary:
     def __init__(self):
+        self.COMMANDS = {'sd': self.specific_date, 'rd': self.random_date, 'yr': self.year_dates,
+                         'all': self.all_dates}
+        self.ARGUMENTS = {'-r': self.reduce, '-o': self.output_format, '-w': self.with_term,
+                          '-a': self.average, '-s': self.sum}
         with open('diary-data.csv', 'r', newline='') as infile:
             self._diary = pd.read_csv(infile)
-            self.MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
-                           'October', 'November', 'December']
-            self.WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-            self.COMMANDS = {'sd': self.specific_date, 'rd': self.random_date, 'yr': self.year_dates,
-                             'all': self.all_dates}
-            self.ARGUMENTS = {'-r': self.reduce, '-o': self.output_format, '-w': self.with_term,
-                              '-a': self.average, '-s': self.sum}
-            self.title()
-            self.shell()
+        self.title()
+        self.shell()
 
     @staticmethod
     def title():
@@ -107,7 +97,7 @@ class Diary:
             print(data.dropna(axis=1, how='all'))
             return 0
 
-        return self.args(command, data, 2)
+        return self.handle_args(command, data, 2)
 
     def random_date(self, command):
         if len(command) != 1:
