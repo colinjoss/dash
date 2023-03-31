@@ -75,7 +75,7 @@ class Diary:
         print('-----------------------------------------------------------------')
         print('[] replace with indicated input')
         print('() optional')
-        print('-  hyphen instead of space')
+        print('-  use hyphen instead of space')
         print('>  search in')
         print('*  group by')
         print('')
@@ -95,6 +95,12 @@ class Diary:
         print('-w           with search term    -w [search-term-here] > [column]')
         print('-a           average numbers     -a [column1] (* [column2])')
         print('-s           sum numbers         -s [column1] (* [column2])')
+        print('')
+        print('OTHER')
+        print('-----------------------------------------------------------------')
+        print('>  -a can only be used with the happiness column')
+        print('>  -s of the duration column cannot be grouped by another column')
+        print('>  to search for multiple terms, simply use -w again')
 
     def specific_date(self, command: list):
         """Prints data for one specific date unless error. Returns code 0 or 1."""
@@ -250,8 +256,8 @@ class Diary:
             return 1, None, None
         if self.column_does_not_exist(args[index], data, f"error: column {args[index]} nonexistent"):
             return 1, None, None
-        if args[index] != 'happiness' or args[index] != 'duration':
-            print(f"error: {args[index]} does not support -a")
+        if args[index] != 'happiness' and args[index] != 'duration':
+            print(f"error: {args[index]} does not support -s")
             return 1, None, None
 
         column = args[index]
