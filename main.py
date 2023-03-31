@@ -159,7 +159,7 @@ class Diary:
             status, index, data = self.ARGUMENTS[cur_arg](args, index + 1, data)
             if status == 1:  # Error, exit loop and return status
                 return status
-            if self.is_int(data) and index < len(args):  # If data is number but more args exist, error
+            if isinstance(data, int) and index < len(args):  # If data is number but more args exist, error
                 print('error: -a or -s must be last argument')
                 return status
 
@@ -177,9 +177,10 @@ class Diary:
             return 1, None, None
         if not self.date_is_less_than(args[index], args[index+1]):
             return 1, None, None
-
-        # MISSING: Check that dat1 and date2 are in current dataframe (may have been reduced)
-        # MISSING: Check that date1 < date2
+        if not self.date_in_range(args[index], data):
+            return 1, None, None
+        if not self.date_in_range(args[index+1], data):
+            return 1, None, None
 
         index1 = data.loc[data['date'] == args[index]].index[0]
         index2 = data.loc[data['date'] == args[index + 1]].index[0]
@@ -369,6 +370,14 @@ class Diary:
         if dt.strptime(date1, "%m/%d/%Y") < dt.strptime(date2, "%m/%d/%Y"):
             return True
         print('error: dates must be in ascending order')
+        return False
+
+    @staticmethod
+    def date_in_range(date, data):
+        """Returns true if date1 came before date2, otherwise false."""
+        if date in data['date'].unique():
+            return True
+        print('error: date out of range')
         return False
 
 
