@@ -175,6 +175,8 @@ class Diary:
             return 1, None, None
         if not self.valid_date_format(index + 1, args, f"error: invalid date format at {index + 1}"):
             return 1, None, None
+        if not self.date_is_less_than(args[index], args[index+1]):
+            return 1, None, None
 
         # MISSING: Check that dat1 and date2 are in current dataframe (may have been reduced)
         # MISSING: Check that date1 < date2
@@ -359,6 +361,14 @@ class Diary:
             if error is not None:
                 print(error)
             return True
+        return False
+
+    @staticmethod
+    def date_is_less_than(date1, date2):
+        """Returns true if date1 came before date2, otherwise false."""
+        if dt.strptime(date1, "%m/%d/%Y") < dt.strptime(date2, "%m/%d/%Y"):
+            return True
+        print('error: dates must be in ascending order')
         return False
 
 
