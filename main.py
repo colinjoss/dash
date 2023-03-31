@@ -32,6 +32,7 @@ class Diary:
         with open('diary-data.csv', 'r', newline='') as infile:
             data = pd.read_csv(infile)
             self._diary = data.loc[:, ~data.columns.str.contains('^Unnamed')]
+        self.log = []
         self.title()
         self.shell()
 
@@ -43,6 +44,7 @@ class Diary:
         print('Dash version 2.0')
         print('Program by Colin Joss')
         print('*** input command \'help\' for list of commands and arguments')
+        print('*** input command \'log\' for list of previously used commands during this session')
         print('-------------------------------------------------------------\n')
 
     def shell(self):
@@ -55,6 +57,8 @@ class Diary:
 
     def process_input(self, user_input: str):
         """Handles primary command."""
+        if user_input != 'log' and user_input != 'help':
+            self.log.append(user_input)
         command = user_input.split()
 
         if len(command) < 1:
@@ -64,6 +68,9 @@ class Diary:
             return -1
         if command[0] == 'help':
             self.help()
+            return 0
+        if command[0] == 'log':
+            self.print_log()
             return 0
         if self.bad_argument(command[0], self.COMMANDS, f"error: argument {command[0]} nonexistent"):
             return 1
@@ -101,6 +108,14 @@ class Diary:
         print('>  -a can only be used with the happiness column')
         print('>  -s of the duration column cannot be grouped by another column')
         print('>  to search for multiple terms, simply use -w again')
+
+    def print_log(self):
+        """Prints user command log to the screen."""
+        if not self.log:
+            print('Log is empty')
+        else:
+            for command in self.log:
+                print(f"> {command}")
 
     def specific_date(self, command: list):
         """Prints data for one specific date unless error. Returns code 0 or 1."""
