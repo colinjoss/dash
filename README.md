@@ -1,12 +1,13 @@
 # dash
 
 DASH is a shell-like program that facilitates the maintenance 
-of my personal diary. The name is a portmanteau of diary and
-bash.
+of my personal diary. The name is a silly portmanteau of diary and
+bash. It also cleverly references how much time this saves me. I
+am a smart boy at naming things!
 
 ![Example input](dash.JPG)
 
-Starting from age 16, I've journaled my life through regular 
+Beginning at age 16, I've journaled my life through regular 
 MP3 voice recordings and an accompanying spreadsheet of life 
 data. Each recording is a diary entry, and the spreadsheet 
 provides much-needed context for these entries. Information
@@ -15,7 +16,7 @@ summary of each day, a list of relevant people to each day,
  and a happiness index.
 
 I am fast approaching 10 years of data about my own life.
-As a computer science student, I sought to facilitate how 
+As a new developer, I wanted to facilitate how 
 I interact with this data by constructing a shell-like 
 program that allows a set of custom commands and arguments 
 to access and display my data.
@@ -40,14 +41,9 @@ ARGUMENTS
 
 Project made with:
 - Python v.3.9
-- os module
-- math module
-- csv library
-- datetime library
-- calendar module
-- inquirer module v.2.7.0
-- mutagen module v.1.45.1
-- figlet module v.0.0.1
+- random
+- datetime
+- pyfiglet library v.0.0.1
 - pandas library v.1.2.2
 
 ## Installation
