@@ -53,10 +53,9 @@ class Diary:
             user_input = input()
             status = self.process_input(user_input)
 
-    def process_input(self, user_input):
+    def process_input(self, user_input: str):
         """Handles primary command."""
         command = user_input.split()
-        print(command)
 
         if len(command) < 1:
             print('error: no command inputted')
@@ -97,7 +96,7 @@ class Diary:
         print('-a           average numbers     -a [column1] (* [column2])')
         print('-s           sum numbers         -s [column1] (* [column2])')
 
-    def specific_date(self, command):
+    def specific_date(self, command: list):
         """Prints data for one specific date unless error. Returns code 0 or 1."""
         if self.missing_argument(1, command, f"error: missing argument at 1"):
             return 1
@@ -114,7 +113,7 @@ class Diary:
 
         return self.handle_args(command, data, 2)  # Command has arguments
 
-    def random_date(self, command):
+    def random_date(self, command: list):
         """Prints data for one random date unless error. Returns code 0 or 1."""
         if self.extra_argument(1, command, f"error: excessive argument at 1"):
             return 1
@@ -124,7 +123,7 @@ class Diary:
         print(data.dropna(how='all'))
         return 0
 
-    def year_dates(self, command):
+    def year_dates(self, command: list):
         """Prints all data for one year unless error. Returns code 0 or 1."""
         if self.missing_argument(1, command, f"error: missing argument at 1"):
             return 1
@@ -140,7 +139,7 @@ class Diary:
 
         return self.handle_args(command, data, 2)
 
-    def all_dates(self, command):
+    def all_dates(self, command: list):
         """Prints all data unless error. Returns code 0 or 1."""
         data = self._diary.copy(deep=True)
         if len(command) == 1:
@@ -148,7 +147,7 @@ class Diary:
             return 0
         return self.handle_args(command, data, 1)
 
-    def handle_args(self, args, data, index):
+    def handle_args(self, args: list, data: pd.DataFrame, index: int):
         """Secondary loop, from where all command arguments are handled."""
         status = 0
         while index < len(args):
@@ -159,7 +158,7 @@ class Diary:
             status, index, data = self.ARGUMENTS[cur_arg](args, index + 1, data)
             if status == 1:  # Error, exit loop and return status
                 return status
-            if isinstance(data, int) and index < len(args):  # If data is number but more args exist, error
+            if self.is_int(data) and index < len(args):  # If data is number but more args exist, error
                 print('error: -a or -s must be last argument')
                 return status
 
@@ -167,7 +166,7 @@ class Diary:
             print(data)
         return status
 
-    def reduce(self, args, index, data):
+    def reduce(self, args: list, index: int, data: pd.DataFrame):
         """Reduces data by date range."""
         if self.missing_argument(index + 1, args, f"error: missing argument at {index + 1}"):
             return 1, None, None
@@ -189,7 +188,7 @@ class Diary:
         index += 2
         return 0, index, data
 
-    def output_format(self, args, index, data):
+    def output_format(self, args: list, index: int, data: pd.DataFrame):
         """Formats output to show only specific columns."""
         if self.missing_argument(index, args, f"error: missing argument at {index}"):
             return 1, None, None
@@ -202,7 +201,7 @@ class Diary:
         index += 1
         return 0, index, data
 
-    def with_term(self, args, index, data):
+    def with_term(self, args: list, index: int, data: pd.DataFrame):
         """Filters data to only include search term."""
         if self.missing_argument(index + 1, args, f"error: missing argument at {index}"):  # Search term
             return 1, None, None
@@ -225,7 +224,7 @@ class Diary:
 
         return 0, index + 3, search_data
 
-    def average(self, args, index, data):
+    def average(self, args: list, index: int, data: pd.DataFrame):
         """Calculates average of column alone or grouped by other column."""
         if self.missing_argument(index, args, f"error: missing argument at {index}"):
             return 1, None, None
@@ -245,7 +244,7 @@ class Diary:
 
         return 0, index, data
 
-    def sum(self, args, index, data):
+    def sum(self, args: list, index: int, data: pd.DataFrame):
         """Calculates sum of column alone or grouped by other column"""
         if self.missing_argument(index, args, f"error: missing argument at {index}"):
             return 1, None, None
@@ -272,7 +271,7 @@ class Diary:
 
         return 0, index, data
 
-    def group_by(self, data, index, args, column1, action):
+    def group_by(self, data: pd.DataFrame, index: int, args: list, column1: str, action: str):
         """Calculates average or sum and groups by column"""
         if self.missing_argument(index + 2, args, f"error: missing argument at {index}"):
             return 1, None, None
@@ -287,7 +286,7 @@ class Diary:
 
         return data.sort_values(by=[column1], ascending=False)
 
-    def sum_duration(self, data):
+    def sum_duration(self, data: pd.DataFrame):
         """Sums the time duration of the recording column"""
         duration_sum = datetime.timedelta(hours=0, minutes=0, seconds=0)
         for item in data['duration'].dropna().tolist():
@@ -312,7 +311,7 @@ class Diary:
     # ERROR HANDLING ----------------------------------------------------------------------------------
 
     @staticmethod
-    def extra_argument(length, command, error):
+    def extra_argument(length: int, command: list, error: str):
         """Returns true if excessive argument, false otherwise."""
         if len(command) != length:
             print(error)
@@ -320,7 +319,7 @@ class Diary:
         return False
 
     @staticmethod
-    def valid_date_format(i, command, error):
+    def valid_date_format(i: int, command: list, error: str):
         """Returns true if date at position i is in correct format, otherwise returns false."""
         try:
             dt.strptime(command[i], "%m/%d/%Y")
@@ -330,7 +329,7 @@ class Diary:
         return True
 
     @staticmethod
-    def bad_argument(arg, possible, error):
+    def bad_argument(arg, possible: dict, error: str):
         """Returns true if bad argument, false otherwise."""
         if arg not in possible:
             print(error)
@@ -338,7 +337,7 @@ class Diary:
         return False
 
     @staticmethod
-    def missing_argument(i, args, error):
+    def missing_argument(i: int, args: list, error: str):
         """Returns true if missing argument, false otherwise."""
         if i > len(args) - 1:
             if error is not None:
@@ -347,7 +346,7 @@ class Diary:
         return False
 
     @staticmethod
-    def bad_operator(i, args, target, error):
+    def bad_operator(i: int, args: list, target: str, error: str):
         """Returns true if bad operator, false otherwise."""
         if args[i] != target:
             if error is not None:
@@ -356,7 +355,7 @@ class Diary:
         return False
 
     @staticmethod
-    def column_does_not_exist(column, data, error):
+    def column_does_not_exist(column: str, data: pd.DataFrame, error: str):
         """Returns true if column nonexistent, false otherwise."""
         if column not in data:
             if error is not None:
@@ -365,7 +364,7 @@ class Diary:
         return False
 
     @staticmethod
-    def date_is_less_than(date1, date2):
+    def date_is_less_than(date1: str, date2: str):
         """Returns true if date1 came before date2, otherwise false."""
         if dt.strptime(date1, "%m/%d/%Y") < dt.strptime(date2, "%m/%d/%Y"):
             return True
@@ -373,12 +372,30 @@ class Diary:
         return False
 
     @staticmethod
-    def date_in_range(date, data):
+    def date_in_range(date: str, data: pd.DataFrame):
         """Returns true if date1 came before date2, otherwise false."""
         if date in data['date'].unique():
             return True
         print('error: date out of range')
         return False
+
+    @staticmethod
+    def is_int(arg: str):
+        try:
+            int(arg)
+            return True
+        except ValueError:
+            return False
+        except TypeError:
+            return False
+
+    @staticmethod
+    def is_float(arg: str):
+        try:
+            float(arg)
+            return True
+        except ValueError:
+            return False
 
 
 if __name__ == '__main__':
