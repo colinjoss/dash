@@ -64,12 +64,12 @@ class Diary:
 
     def process_input(self, user_input: str):
         """Handles primary command."""
-        if user_input != 'log' and user_input != 'help':
+        if user_input not in ['log', 'help']:
             self.log.append(user_input)
         command = user_input.split()
 
         if len(command) < 1:
-            print('error: no command inputted')
+            print('error: no command input')
             return 1
         if command[0] == 'exit':
             return -1
@@ -89,7 +89,7 @@ class Diary:
         print('--------------------------------------------------------------------------------')
         print('[] replace with indicated input')
         print('() optional')
-        print('-  use hyphen instead of space')
+        print('+  use + instead of space')
         print('>  search in')
         print('*  group by')
         print('')
@@ -105,10 +105,11 @@ class Diary:
         print('argument     action              usage                               example')
         print('--------------------------------------------------------------------------------')
         print('-r           reduce date range   -r [M/D/YYYY] [M/D/YYYY]            all -r 5/3/2019 5/18/2019')
-        print('-o           output columns      -o [column1-column2-column3]        yr 2020 -o date-happiness')
-        print('-w           with search term    -w [search-term-here] > [column]    all -w peter-joss > people')
+        print('-o           output columns      -o [column1-column2-column3]        yr 2020 -o date+happiness')
+        print('-w           with search term    -w [search-term-here] > [column]    all -w peter+joss > people')
         print('-a           average numbers     -a [column1] (* [column2])          all -a happiness * weekday')
         print('-s           sum numbers         -s [column1] (* [column2])          all -s recording')
+        print('-p           plot graph          -p [plot type]                      all -a happiness * month -p bar')
         print('')
         print('OTHER')
         print('--------------------------------------------------------------------------------')
@@ -219,7 +220,7 @@ class Diary:
         """Formats output to show only specific columns."""
         if self.missing_argument(index, args, f"error: missing argument at {index}"):
             return 1, None, None
-        columns = args[index].split('-')
+        columns = args[index].split('+')
         for col in columns:
             if self.column_does_not_exist(col, data, f"error: column {col} nonexistent"):
                 return 1, None, None
