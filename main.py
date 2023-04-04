@@ -1,5 +1,5 @@
 # Author: Colin Joss
-# Last date updated: 3-31-2023
+# Last date updated: 4-4-2023
 # Description: A shell-inspired interface for interacting with my digital diary.
 
 import datetime
@@ -7,6 +7,8 @@ from datetime import datetime as dt
 from pyfiglet import Figlet
 import pandas as pd
 import random as rand
+import matplotlib.pyplot as plt
+import math as m
 
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
@@ -27,7 +29,12 @@ class Diary:
             '-o': self.output_format,
             '-w': self.with_term,
             '-a': self.average,
-            '-s': self.sum
+            '-s': self.sum,
+            '-p': self.plot
+        }
+        self.PLOTS = {
+            'line': plt.plot,
+            'bar': plt.bar
         }
         with open('diary-data.csv', 'r', newline='') as infile:
             data = pd.read_csv(infile)
@@ -100,13 +107,13 @@ class Diary:
         print('-r           reduce date range   -r [M/D/YYYY] [M/D/YYYY]            all -r 5/3/2019 5/18/2019')
         print('-o           output columns      -o [column1-column2-column3]        yr 2020 -o date-happiness')
         print('-w           with search term    -w [search-term-here] > [column]    all -w peter-joss > people')
-        print('-a           average numbers     -a [column1] (* [column2])          all happiness -a * weekday')
-        print('-s           sum numbers         -s [column1] (* [column2])          all duration -s')
+        print('-a           average numbers     -a [column1] (* [column2])          all -a happiness * weekday')
+        print('-s           sum numbers         -s [column1] (* [column2])          all -s recording')
         print('')
         print('OTHER')
         print('--------------------------------------------------------------------------------')
         print('>  -a can only be used with the happiness column')
-        print('>  -s of the duration column cannot be grouped by another column')
+        print('>  -s of the recording column cannot be grouped by another column')
         print('>  to search for multiple terms, simply use -w again')
 
     def print_log(self):
@@ -206,8 +213,7 @@ class Diary:
         index2 = data.loc[data['date'] == args[index + 1]].index[0]
         data = data.iloc[index1:index2 + 1]
 
-        index += 2
-        return 0, index, data
+        return 0, index+2, data
 
     def output_format(self, args: list, index: int, data: pd.DataFrame):
         """Formats output to show only specific columns."""
@@ -219,8 +225,7 @@ class Diary:
                 return 1, None, None
 
         data = data[columns]
-        index += 1
-        return 0, index, data
+        return 0, index+1, data
 
     def with_term(self, args: list, index: int, data: pd.DataFrame):
         """Filters data to only include search term."""
@@ -243,7 +248,7 @@ class Diary:
         search_data = search_data[search_data[column].notna()]
         search_data = search_data.loc[search_data[column].str.contains(search, case=False)]
 
-        return 0, index + 3, search_data
+        return 0, index+3, search_data
 
     def average(self, args: list, index: int, data: pd.DataFrame):
         """Calculates average of column alone or grouped by other column."""
@@ -271,7 +276,7 @@ class Diary:
             return 1, None, None
         if self.column_does_not_exist(args[index], data, f"error: column {args[index]} nonexistent"):
             return 1, None, None
-        if args[index] != 'happiness' and args[index] != 'duration':
+        if args[index] != 'happiness' and args[index] != 'recording':
             print(f"error: {args[index]} does not support -s")
             return 1, None, None
 
@@ -283,7 +288,7 @@ class Diary:
             else:
                 data = data[column].sum()
                 index += 1
-        elif column == 'duration':
+        elif column == 'recording':
             data = self.sum_duration(data)
             index += 1
             if index + 1 < len(args) and args[index + 1] == '*':
@@ -291,6 +296,40 @@ class Diary:
                 return 1, None, None
 
         return 0, index, data
+
+    def plot(self, args: list, index: int, data: pd.DataFrame):
+        """Plots valid values of two columns as a bar or line graph."""
+        if self.missing_argument(index, args, f"error: missing argument at {index}"):
+            return 1, None, None
+        if self.plot_does_not_exist(args[index], data, f"error: plot type does not exist"):
+            return 1, None, None
+        if data.shape[1] > 2:
+            print('error: cannot plot with more than 2 columns, use -o first')
+            return 1, None, None
+
+        # Separate out plot x and y values
+        df_list = data.values.tolist()
+        x_values = [pair[0] for pair in df_list]
+        y_values = [pair[1] for pair in df_list]
+
+        # Determine type value of x and y
+        x_values_type = 'string' if all(isinstance(x_val, str) for x_val in x_values) else 'number'
+        y_values_type = 'string' if all(isinstance(y_val, str) for y_val in y_values) else 'number'
+        if x_values_type == 'string' and y_values_type == 'string':
+            print('error: cannot plot only string values')
+            return 1, None, None
+
+        # Set matplotlib limiters if possible
+        if x_values_type == 'number':
+            plt.xlim(m.floor(min(x_values)), m.ceil(max(x_values)))
+        if y_values_type == 'number':
+            plt.ylim(m.floor(min(y_values)), m.ceil(max(y_values)))
+
+        # Plot!
+        self.PLOTS[args[index]](x_values, y_values)
+        plt.show()
+
+        return 0, index+1, data
 
     def group_by(self, data: pd.DataFrame, index: int, args: list, column1: str, action: str):
         """Calculates average or sum and groups by column"""
@@ -304,13 +343,12 @@ class Diary:
             data = data.groupby(column2, as_index=False)[column1].mean()
         elif action == 'sum':
             data = data.groupby(column2, as_index=False)[column1].sum()
-
         return data.sort_values(by=[column1], ascending=False)
 
     def sum_duration(self, data: pd.DataFrame):
         """Sums the time duration of the recording column"""
         duration_sum = datetime.timedelta(hours=0, minutes=0, seconds=0)
-        for item in data['duration'].dropna().tolist():
+        for item in data['recording'].dropna().tolist():
             hms = item.split(':')
             if self.is_int(hms[0]) and self.is_int(hms[1]) and self.is_int(hms[2]):
                 time_obj = datetime.timedelta(hours=int(hms[0]), minutes=int(hms[1]), seconds=int(hms[2]))
@@ -319,7 +357,7 @@ class Diary:
 
     def get_total_length(self):
         """Calculates the sum total amount of recording time."""
-        duration_df = self._diary['duration'].dropna()
+        duration_df = self._diary['recording'].dropna()
         duration_sum = datetime.timedelta(hours=0, minutes=0, seconds=0)
         for duration in duration_df.tolist():
             if duration == ' ':
@@ -379,6 +417,15 @@ class Diary:
     def column_does_not_exist(column: str, data: pd.DataFrame, error: str):
         """Returns true if column nonexistent, false otherwise."""
         if column not in data:
+            if error is not None:
+                print(error)
+            return True
+        return False
+
+    @staticmethod
+    def plot_does_not_exist(plot: str, data: pd.DataFrame, error: str):
+        """Returns true if plot nonexistent, false otherwise."""
+        if plot not in ['line', 'bar']:
             if error is not None:
                 print(error)
             return True
