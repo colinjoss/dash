@@ -5,7 +5,7 @@ of my personal diary. The name is a silly portmanteau of diary and
 bash. It also cleverly references how much time this saves me. I
 am good at naming things!
 
-![Example input](dash.JPG)
+![Example input](dash-screenshot.PNG)
 
 Beginning at age 16, I've journaled my life through regular 
 MP3 voice recordings and an accompanying spreadsheet of life 
@@ -44,6 +44,7 @@ Project made with:
 - random, math, datetime, matplotlib
 - pyfiglet library v.0.0.1 - for the title
 - pandas library v.1.2.2 - for data manipulation
+- tabulate library - for pretty pandas dataframes
 
 ## Installation
 
