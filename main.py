@@ -9,6 +9,7 @@ import pandas as pd
 import random as rand
 import matplotlib.pyplot as plt
 import math as m
+from tabulate import tabulate
 
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
@@ -48,7 +49,7 @@ class Diary:
         """Displays the title of the program."""
         custom_fig = Figlet()
         print(custom_fig.renderText('DASH'))
-        print('Dash version 2.0')
+        print('Dash version 3.0')
         print('Program by Colin Joss')
         print('*** input command \'help\' for list of commands and arguments')
         print('*** input command \'log\' for list of previously used commands during this session')
@@ -137,7 +138,7 @@ class Diary:
         data = data.loc[data['date'] == command[1]]  # Reduce data to only where date matches given
 
         if len(command) == 2:  # Command has no arguments
-            print(data.dropna(axis=1, how='all'))
+            print(tabulate(data.dropna(axis=1, how='all'), headers='keys', tablefmt='psql', numalign="left"))
             return 0
 
         return self.handle_args(command, data, 2)  # Command has arguments
@@ -149,7 +150,7 @@ class Diary:
 
         data = self._diary.copy(deep=True)
         data = data.iloc[rand.randint(0, len(data.index))]
-        print(data.dropna(how='all'))
+        print(tabulate(data.dropna(axis=1, how='all'), headers='keys', tablefmt='psql', numalign="left"))
         return 0
 
     def year_dates(self, command: list):
@@ -163,7 +164,7 @@ class Diary:
         data = self._diary.copy(deep=True)
         data = data.loc[data['year'] == int(command[1])]
         if len(command) == 2:
-            print(data.dropna(axis=1, how='all'))
+            print(tabulate(data.dropna(axis=1, how='all'), headers='keys', tablefmt='psql', numalign="left"))
             return 0
 
         return self.handle_args(command, data, 2)
@@ -172,7 +173,7 @@ class Diary:
         """Prints all data unless error. Returns code 0 or 1."""
         data = self._diary.copy(deep=True)
         if len(command) == 1:
-            print(data)
+            print(tabulate(data.dropna(axis=1, how='all'), headers='keys', tablefmt='psql', numalign="left"))
             return 0
         return self.handle_args(command, data, 1)
 
@@ -192,7 +193,10 @@ class Diary:
                 return status
 
         if data is not None:
-            print(data)
+            if isinstance(data, pd.DataFrame):
+                print(tabulate(data.dropna(axis=1, how='all'), headers='keys', tablefmt='psql', numalign="left"))
+            else:
+                print(data)
         return status
 
     def reduce(self, args: list, index: int, data: pd.DataFrame):
