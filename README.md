@@ -3,7 +3,7 @@
 DASH is a shell-like program that facilitates the maintenance 
 of my personal diary. The name is a silly portmanteau of diary and
 bash. It also cleverly references how much time this saves me. I
-am a smart boy at naming things!
+am good at naming things!
 
 ![Example input](dash.JPG)
 
@@ -32,22 +32,22 @@ COMMANDS
 
 ARGUMENTS
 
-|  | -r | -o | -w | -a | -s |
-| --- | --- | --- | --- |--- | --- |
-| action | reduce | output format | with search term | average | sum |
-| example | -r M/D/YYYY M/D/YYYY | -o column1,column2,... | -w search+terms+here > column | -a column (* column) | -s column (* column) |
+|  | -r | -o | -w | -a | -s | -p |
+| --- | --- | --- | --- |--- | --- | --- |
+| action | reduce | output format | with search term | average | sum | plot |
+| example | -r M/D/YYYY M/D/YYYY | -o column1+column2,... | -w search+terms+here > column | -a column (* column) | -s column (* column) | -p graphtype |
 
 ## Technologies
 
 Project made with:
 - Python v.3.9
-- random
-- datetime
-- pyfiglet library v.0.0.1
-- pandas library v.1.2.2
+- random, math, datetime, matplotlib
+- pyfiglet library v.0.0.1 - for the title
+- pandas library v.1.2.2 - for data manipulation
 
 ## Installation
 
 Clone from Github and run in the terminal. This project was not made
 with the intention of people other than me using it, but... it's here
-if someone wants it.
+if someone wants it. Note that you would either have to structure your
+diary data csv exactly as mine or modify the source code.
