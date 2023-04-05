@@ -197,18 +197,18 @@ class Diary:
 
     def reduce(self, args: list, index: int, data: pd.DataFrame):
         """Reduces data by date range."""
+        if self.column_does_not_exist('date', data, f"error: column date nonexistent"):
+            return 1, None, None
         if self.missing_argument(index + 1, args, f"error: missing argument at {index + 1}"):
             return 1, None, None
-        if not self.valid_date_format(index, args, f"error: invalid date format at {index}"):
-            return 1, None, None
-        if not self.valid_date_format(index + 1, args, f"error: invalid date format at {index + 1}"):
-            return 1, None, None
+        for i in range(2):
+            if not self.valid_date_format(index+i, args, f"error: invalid date format at {index+i}"):
+                return 1, None, None
         if not self.date_is_less_than(args[index], args[index+1]):
             return 1, None, None
-        if not self.date_in_range(args[index], data):
-            return 1, None, None
-        if not self.date_in_range(args[index+1], data):
-            return 1, None, None
+        for i in range(2):
+            if not self.date_in_range(args[index+i], data):
+                return 1, None, None
 
         index1 = data.loc[data['date'] == args[index]].index[0]
         index2 = data.loc[data['date'] == args[index + 1]].index[0]
@@ -230,15 +230,12 @@ class Diary:
 
     def with_term(self, args: list, index: int, data: pd.DataFrame):
         """Filters data to only include search term."""
-        if self.missing_argument(index + 1, args, f"error: missing argument at {index}"):  # Search term
+        for i in range(3):
+            if self.missing_argument(index+i, args, f"error: missing argument at {index+i}"):  # Search, >, column
+                return 1, None, None
+        if self.bad_operator(index+1, args, '>', f"error: operator {args[index+1]} is not >"):
             return 1, None, None
-        if self.missing_argument(index + 1, args, f"error: missing argument at {index + 1}"):  # > operator
-            return 1, None, None
-        if self.missing_argument(index + 2, args, f"error: missing argument at {index + 2}"):  # column name
-            return 1, None, None
-        if self.bad_operator(index + 1, args, '>', f"error: operator {args[index + 1]} is not >"):
-            return 1, None, None
-        if self.column_does_not_exist(args[index + 2], data, f"error: column {args[index + 2]} nonexistent"):
+        if self.column_does_not_exist(args[index+2], data, f"error: column {args[index+2]} nonexistent"):
             return 1, None, None
 
         search = args[index].split('+')
@@ -302,7 +299,7 @@ class Diary:
         """Plots valid values of two columns as a bar or line graph."""
         if self.missing_argument(index, args, f"error: missing argument at {index}"):
             return 1, None, None
-        if self.plot_does_not_exist(args[index], data, f"error: plot type does not exist"):
+        if self.plot_does_not_exist(args[index], f"error: plot type does not exist"):
             return 1, None, None
         if data.shape[1] > 2:
             print('error: cannot plot with more than 2 columns, use -o first')
@@ -424,7 +421,7 @@ class Diary:
         return False
 
     @staticmethod
-    def plot_does_not_exist(plot: str, data: pd.DataFrame, error: str):
+    def plot_does_not_exist(plot: str, error: str):
         """Returns true if plot nonexistent, false otherwise."""
         if plot not in ['line', 'bar']:
             if error is not None:
